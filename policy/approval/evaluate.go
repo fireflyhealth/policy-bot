@@ -18,8 +18,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/palantir/policy-bot/commit"
 	"github.com/palantir/policy-bot/policy/common"
 	"github.com/palantir/policy-bot/pull"
+	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 )
 
@@ -37,6 +39,26 @@ func (eval *evaluator) Trigger() common.Trigger {
 func (eval *evaluator) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (res common.Result) {
 	if eval.root != nil {
 		res = eval.root.EvaluatePullRequest(ctx, prctx)
+	} else {
+		zerolog.Ctx(ctx).Debug().Msg("No approval policy defined; skipping")
+
+		res.Status = common.StatusApproved
+		res.StatusDescription = "No approval policy defined"
+	}
+
+	res.Name = "approval"
+	return
+}
+
+func (eval *evaluator) EvaluateCommit(ctx context.Context, cctx commit.Context) (res common.Result) {
+	if eval.root != nil {
+		ce, ok := eval.root.(common.CommitEvaluator)
+		if !ok {
+			res.Error = errors.Errorf("approval policy root %T does not support commit-only evaluation", eval.root)
+			res.Name = "approval"
+			return
+		}
+		res = ce.EvaluateCommit(ctx, cctx)
 	} else {
 		zerolog.Ctx(ctx).Debug().Msg("No approval policy defined; skipping")
 
@@ -76,6 +98,20 @@ func (r *RuleRequirement) EvaluatePullRequest(ctx context.Context, prctx pull.Co
 	return result
 }
 
+func (r *RuleRequirement) EvaluateCommit(ctx context.Context, cctx commit.Context) common.Result {
+	log := zerolog.Ctx(ctx).With().Str("rule", r.rule.Name).Logger()
+	ctx = log.WithContext(ctx)
+
+	result := r.rule.EvaluateCommit(ctx, cctx)
+	if result.Error == nil {
+		log.Debug().Msgf("rule evaluation resulted in %s:\"%s\"", result.Status, result.StatusDescription)
+	} else {
+		log.Info().Err(result.Error).Msg("rule evaluation resulted in error")
+	}
+
+	return result
+}
+
 type OrRequirement struct {
 	requirements []common.PullRequestEvaluator
 }
@@ -94,7 +130,18 @@ func (r *OrRequirement) EvaluatePullRequest(ctx context.Context, prctx pull.Cont
 		res := req.EvaluatePullRequest(ctx, prctx)
 		children = append(children, &res)
 	}
+	return reduceOr(children)
+}
 
+func (r *OrRequirement) EvaluateCommit(ctx context.Context, cctx commit.Context) common.Result {
+	children, err := evaluateChildrenCommit(ctx, cctx, r.requirements)
+	if err != nil {
+		return common.Result{Name: "or", Error: err}
+	}
+	return reduceOr(children)
+}
+
+func reduceOr(children []*common.Result) common.Result {
 	var err error
 	var pending, approved, skipped int
 	for _, c := range children {
@@ -154,7 +201,18 @@ func (r *AndRequirement) EvaluatePullRequest(ctx context.Context, prctx pull.Con
 		res := req.EvaluatePullRequest(ctx, prctx)
 		children = append(children, &res)
 	}
+	return reduceAnd(children)
+}
 
+func (r *AndRequirement) EvaluateCommit(ctx context.Context, cctx commit.Context) common.Result {
+	children, err := evaluateChildrenCommit(ctx, cctx, r.requirements)
+	if err != nil {
+		return common.Result{Name: "and", Error: err}
+	}
+	return reduceAnd(children)
+}
+
+func reduceAnd(children []*common.Result) common.Result {
 	var err error
 	var pending, approved, skipped int
 	for _, c := range children {
@@ -192,4 +250,17 @@ func (r *AndRequirement) EvaluatePullRequest(ctx context.Context, prctx pull.Con
 		Error:             err,
 		Children:          children,
 	}
+}
+
+func evaluateChildrenCommit(ctx context.Context, cctx commit.Context, reqs []common.PullRequestEvaluator) ([]*common.Result, error) {
+	var children []*common.Result
+	for _, req := range reqs {
+		ce, ok := req.(common.CommitEvaluator)
+		if !ok {
+			return nil, errors.Errorf("requirement %T does not support commit-only evaluation", req)
+		}
+		res := ce.EvaluateCommit(ctx, cctx)
+		children = append(children, &res)
+	}
+	return children, nil
 }

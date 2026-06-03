@@ -17,6 +17,7 @@ package common
 import (
 	"context"
 
+	"github.com/palantir/policy-bot/commit"
 	"github.com/palantir/policy-bot/pull"
 )
 
@@ -27,4 +28,16 @@ type PullRequestEvaluator interface {
 	Triggered
 
 	EvaluatePullRequest(ctx context.Context, prctx pull.Context) Result
+}
+
+// CommitEvaluator evaluates a policy against a commit.Context, without any
+// pull request data. It is implemented by evaluators that can run on the
+// commit-scoped subset of a policy (for example, for merge group events).
+// Evaluators that require pull request data should set Error on the returned
+// Result rather than implementing this interface in a way that silently
+// produces misleading output.
+type CommitEvaluator interface {
+	Triggered
+
+	EvaluateCommit(ctx context.Context, cctx commit.Context) Result
 }

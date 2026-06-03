@@ -17,6 +17,7 @@ package policy
 import (
 	"context"
 
+	"github.com/palantir/policy-bot/commit"
 	"github.com/palantir/policy-bot/policy/approval"
 	"github.com/palantir/policy-bot/policy/common"
 	"github.com/palantir/policy-bot/policy/disapproval"
@@ -146,5 +147,31 @@ func (e evaluator) EvaluatePullRequest(ctx context.Context, prctx pull.Context) 
 		res.Status = approval.Status
 		res.StatusDescription = approval.StatusDescription
 	}
+	return
+}
+
+// EvaluateCommit evaluates the approval portion of the policy against a
+// commit.Context. The disapproval policy is skipped entirely because it is
+// driven by pull request comments and reviews, which are not available
+// outside of a pull request.
+func (e evaluator) EvaluateCommit(ctx context.Context, cctx commit.Context) (res common.Result) {
+	res.Name = "policy"
+
+	ce, ok := e.approval.(common.CommitEvaluator)
+	if !ok {
+		res.Error = errors.Errorf("approval evaluator %T does not support commit-only evaluation", e.approval)
+		return
+	}
+
+	approval := ce.EvaluateCommit(ctx, cctx)
+	res.Children = []*common.Result{&approval}
+
+	if approval.Error != nil {
+		res.Error = approval.Error
+		return
+	}
+
+	res.Status = approval.Status
+	res.StatusDescription = approval.StatusDescription
 	return
 }

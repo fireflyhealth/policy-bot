@@ -57,3 +57,19 @@ func EvaluatePullRequest(ctx context.Context, p common.Triggered, prctx pull.Con
 		return nil, fmt.Errorf("unknown predicate type %T", p)
 	}
 }
+
+// EvaluateCommit dispatches to the correct method based on the underlying
+// type of p, using only a commit.Context. PullRequestPredicates cannot be
+// evaluated against a commit context and produce a hard error: callers that
+// reach this branch in a merge group context must surface the error so the
+// policy author can adjust the rule.
+func EvaluateCommit(ctx context.Context, p common.Triggered, cctx commit.Context) (*common.PredicateResult, error) {
+	switch p := p.(type) {
+	case CommitPredicate:
+		return p.EvaluateCommit(ctx, cctx)
+	case PullRequestPredicate:
+		return nil, fmt.Errorf("predicate %T requires pull request data and cannot be evaluated for a merge group", p)
+	default:
+		return nil, fmt.Errorf("unknown predicate type %T", p)
+	}
+}

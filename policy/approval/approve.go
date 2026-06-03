@@ -73,6 +73,81 @@ func (r *Rule) Trigger() common.Trigger {
 	return t
 }
 
+// EvaluateCommit evaluates the rule against a commit.Context, with no pull
+// request data available. It supports only the commit-scoped subset of the
+// rule: rules that require approvals (Requires.Count > 0) or that reference
+// any PullRequestPredicate produce a hard error so the policy author can
+// adjust the policy for merge group evaluation.
+func (r *Rule) EvaluateCommit(ctx context.Context, cctx commit.Context) (res common.Result) {
+	log := zerolog.Ctx(ctx)
+
+	res.Name = r.Name
+	res.Description = r.Description
+	res.Status = common.StatusSkipped
+	res.Methods = r.Options.GetMethods()
+
+	var predicateResults []*common.PredicateResult
+
+	for _, p := range r.Predicates.Predicates() {
+		result, err := predicate.EvaluateCommit(ctx, p, cctx)
+		if err != nil {
+			res.Error = errors.Wrap(err, "failed to evaluate predicate")
+			return
+		}
+		predicateResults = append(predicateResults, result)
+
+		if !result.Satisfied {
+			log.Debug().Msgf("skipping rule, predicate of type %T was not satisfied", p)
+
+			desc := result.Description
+			res.StatusDescription = desc
+			if desc == "" {
+				res.StatusDescription = "A precondition of this rule was not satisfied"
+			}
+			res.PredicateResults = []*common.PredicateResult{result}
+			return
+		}
+	}
+	res.PredicateResults = predicateResults
+
+	if r.Requires.Count > 0 {
+		res.Error = errors.Errorf("rule %q requires %d approvals and cannot be evaluated for a merge group", r.Name, r.Requires.Count)
+		return
+	}
+
+	conditions := r.Requires.Conditions.Predicates()
+	var conditionResults []*common.PredicateResult
+	approved := 0
+	for _, c := range conditions {
+		result, err := predicate.EvaluateCommit(ctx, c, cctx)
+		if err != nil {
+			res.Error = errors.Wrap(err, "failed to evaluate condition")
+			return
+		}
+		if result.Satisfied {
+			approved++
+		}
+		conditionResults = append(conditionResults, result)
+	}
+
+	res.Requires = common.RequiresResult{
+		Conditions: conditionResults,
+	}
+
+	if approved == len(conditions) {
+		res.Status = common.StatusApproved
+		if len(conditions) == 0 {
+			res.StatusDescription = "No approval required"
+		} else {
+			res.StatusDescription = "Required conditions satisfied"
+		}
+	} else {
+		res.Status = common.StatusPending
+		res.StatusDescription = fmt.Sprintf("%d/%d required conditions", approved, len(conditions))
+	}
+	return
+}
+
 func (r *Rule) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (res common.Result) {
 	log := zerolog.Ctx(ctx)
 
