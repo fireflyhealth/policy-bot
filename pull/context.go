@@ -20,29 +20,15 @@ import (
 	"github.com/palantir/policy-bot/commit"
 )
 
-// Context is the context for a pull request. It defines methods to get
-// information about the pull request and the VCS system containing the pull
-// request (e.g. GitHub).
+// Context is the context for a pull request. It extends commit.Context with
+// methods that return information that only exists in the context of a pull
+// request (the PR's identity, author, comments, reviews, requested
+// reviewers, labels, and lifecycle state).
 //
 // A new Context should be created for each request, so implementations are not
 // required to be thread-safe.
 type Context interface {
-	commit.MembershipContext
-
-	// EvaluationTimestamp returns the time at the start of the pull request
-	// evaluation, usually the creation time of the context. All calls on the
-	// same context should return the same value.
-	EvaluationTimestamp() time.Time
-
-	// RepositoryOwner returns the owner of the repo that the pull request targets.
-	RepositoryOwner() string
-
-	// RepositoryName returns the repo that the pull request targets.
-	RepositoryName() string
-
-	// RepositoryCustomProperties returns the custom properties of the repo that the pull request targets.
-	// For an unset property, the key is _not_ present in the map.
-	RepositoryCustomProperties() (map[string]commit.CustomProperty, error)
+	commit.Context
 
 	// Number returns the number of the pull request.
 	Number() int
@@ -65,26 +51,6 @@ type Context interface {
 	// IsClosed returns true when the state of the pull request is "closed"
 	IsClosed() bool
 
-	// HeadSHA returns the SHA of the head commit of the pull request.
-	HeadSHA() string
-
-	// Branches returns the base (also known as target) and head branch names
-	// of this pull request. Branches in this repository have no prefix, while
-	// branches in forks are prefixed with the owner of the fork and a colon.
-	// The base branch will always be unprefixed.
-	Branches() (base string, head string)
-
-	// ChangedFiles returns the files that were changed in this pull request.
-	ChangedFiles() ([]*commit.File, error)
-
-	// Commits returns the commits that are part of this pull request. The
-	// commit order is implementation dependent.
-	Commits() ([]*commit.Commit, error)
-
-	// PushedAt returns the time at which the commit with sha was pushed. The
-	// returned time may be after the actual push time, but must not be before.
-	PushedAt(sha string) (time.Time, error)
-
 	// Comments lists all comments on a Pull Request. The comment order is
 	// implementation dependent.
 	Comments() ([]*Comment, error)
@@ -96,29 +62,9 @@ type Context interface {
 	// IsDraft returns the draft status of the Pull Request.
 	IsDraft() bool
 
-	// RepositoryCollaborators returns the repository collaborators.
-	// Filters to collaborators with at least the specified permission level.
-	// Filtering by permission can significantly improve performance.
-	RepositoryCollaborators(minPermission commit.Permission) ([]*commit.Collaborator, error)
-
-	// CollaboratorPermission returns the permission level of user on the repository.
-	CollaboratorPermission(user string) (commit.Permission, error)
-
-	// Teams lists the set of team collaborators, along with their respective
-	// permission on a repo.
-	Teams() (map[string]commit.Permission, error)
-
 	// RequestedReviewers returns any current and dismissed review requests on
 	// the pull request.
 	RequestedReviewers() ([]*Reviewer, error)
-
-	// LatestStatuses returns a map of status check names to the latest result
-	LatestStatuses() (map[string]string, error)
-
-	// LatestWorkflowRuns returns the latest GitHub Actions workflow runs for
-	// the pull request. The keys of the map are paths to the workflow files and
-	// the values are the conclusions of the latest runs, one per event type.
-	LatestWorkflowRuns() (map[string][]string, error)
 
 	// Labels returns a list of labels applied on the Pull Request
 	Labels() ([]string, error)

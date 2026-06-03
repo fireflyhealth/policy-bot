@@ -20,7 +20,6 @@ import (
 	"sort"
 
 	"github.com/palantir/policy-bot/commit"
-	"github.com/palantir/policy-bot/pull"
 	"github.com/pkg/errors"
 )
 
@@ -74,13 +73,13 @@ func (a *Actors) GetPermissions() []commit.Permission {
 
 // IsActor returns true if the given user satisfies at least one of the
 // conditions in this structure.
-func (a *Actors) IsActor(ctx context.Context, prctx pull.Context, user string) (bool, error) {
+func (a *Actors) IsActor(ctx context.Context, cctx commit.Context, user string) (bool, error) {
 	if slices.Contains(a.Users, user) {
 		return true, nil
 	}
 
 	for _, t := range a.Teams {
-		member, err := prctx.IsTeamMember(t, user)
+		member, err := cctx.IsTeamMember(t, user)
 		if err != nil {
 			return false, errors.Wrap(err, "failed to get team membership")
 		}
@@ -90,7 +89,7 @@ func (a *Actors) IsActor(ctx context.Context, prctx pull.Context, user string) (
 	}
 
 	for _, o := range a.Organizations {
-		member, err := prctx.IsOrgMember(o, user)
+		member, err := cctx.IsOrgMember(o, user)
 		if err != nil {
 			return false, errors.Wrap(err, "failed to get org membership")
 		}
@@ -101,7 +100,7 @@ func (a *Actors) IsActor(ctx context.Context, prctx pull.Context, user string) (
 
 	permissions := a.GetPermissions()
 	if len(permissions) > 0 {
-		userPerm, err := prctx.CollaboratorPermission(user)
+		userPerm, err := cctx.CollaboratorPermission(user)
 		if err != nil {
 			return false, err
 		}
