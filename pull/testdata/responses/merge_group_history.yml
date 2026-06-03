@@ -1,0 +1,83 @@
+- status: 200
+  body: |
+    {
+      "data": {
+        "repository": {
+          "object": {
+            "history": {
+              "pageInfo": {
+                "endCursor": "1",
+                "hasNextPage": false
+              },
+              "nodes": [
+                {
+                  "oid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "author": {
+                    "user": {
+                      "login": "mhaypenny"
+                    }
+                  },
+                  "committer": {
+                    "user": {
+                      "login": "mhaypenny"
+                    }
+                  },
+                  "parents": {
+                    "nodes": [
+                      {
+                        "oid": "cccccccccccccccccccccccccccccccccccccccc"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "oid": "cccccccccccccccccccccccccccccccccccccccc",
+                  "author": {
+                    "user": {
+                      "login": "ttest"
+                    }
+                  },
+                  "committer": {
+                    "user": {
+                      "login": "mhaypenny"
+                    }
+                  },
+                  "parents": {
+                    "nodes": [
+                      {
+                        "oid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+                      }
+                    ]
+                  },
+                  "signature": {
+                    "__typename": "GpgSignature",
+                    "isValid": true,
+                    "keyId": "3AA5C34371567BD2",
+                    "signer": {
+                      "login": "ttest"
+                    },
+                    "state": "VALID"
+                  }
+                },
+                {
+                  "oid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                  "author": {
+                    "user": {
+                      "login": "should-not-be-included"
+                    }
+                  },
+                  "committer": {
+                    "user": {
+                      "login": "should-not-be-included"
+                    }
+                  },
+                  "parents": {
+                    "nodes": []
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
