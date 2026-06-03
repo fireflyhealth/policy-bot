@@ -18,6 +18,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/palantir/policy-bot/commit"
 	"github.com/palantir/policy-bot/policy/common"
 	"github.com/palantir/policy-bot/pull"
 	"github.com/palantir/policy-bot/pull/pulltest"
@@ -25,7 +26,7 @@ import (
 )
 
 var customPropertiesTestCtx = &pulltest.Context{
-	RepositoryCustomPropertiesValue: map[string]pull.CustomProperty{
+	RepositoryCustomPropertiesValue: map[string]commit.CustomProperty{
 		"custom1": {String: new("value1")},
 		"custom2": {String: new("value2")},
 		"custom3": {Array: []string{"a", "b", "c"}},

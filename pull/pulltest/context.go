@@ -18,6 +18,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/palantir/policy-bot/commit"
 	"github.com/palantir/policy-bot/pull"
 )
 
@@ -40,10 +41,10 @@ type Context struct {
 	BodyValue *pull.Body
 	BodyError error
 
-	ChangedFilesValue []*pull.File
+	ChangedFilesValue []*commit.File
 	ChangedFilesError error
 
-	CommitsValue []*pull.Commit
+	CommitsValue []*commit.Commit
 	CommitsError error
 
 	PushedAtValue map[string]time.Time
@@ -57,13 +58,13 @@ type Context struct {
 	TeamMemberships     map[string][]string
 	TeamMembershipError error
 
-	TeamsValue map[string]pull.Permission
+	TeamsValue map[string]commit.Permission
 	TeamsError error
 
 	OrgMemberships     map[string][]string
 	OrgMembershipError error
 
-	CollaboratorsValue []*pull.Collaborator
+	CollaboratorsValue []*commit.Collaborator
 	CollaboratorsError error
 
 	RequestedReviewersValue []*pull.Reviewer
@@ -78,7 +79,7 @@ type Context struct {
 	LabelsValue []string
 	LabelsError error
 
-	RepositoryCustomPropertiesValue map[string]pull.CustomProperty
+	RepositoryCustomPropertiesValue map[string]commit.CustomProperty
 	RepositoryCustomPropertiesError error
 
 	Draft bool
@@ -145,11 +146,11 @@ func (c *Context) Branches() (base string, head string) {
 	return c.BranchBaseName, c.BranchHeadName
 }
 
-func (c *Context) ChangedFiles() ([]*pull.File, error) {
+func (c *Context) ChangedFiles() ([]*commit.File, error) {
 	return c.ChangedFilesValue, c.ChangedFilesError
 }
 
-func (c *Context) Commits() ([]*pull.Commit, error) {
+func (c *Context) Commits() ([]*commit.Commit, error) {
 	return c.CommitsValue, c.CommitsError
 }
 
@@ -179,19 +180,19 @@ func (c *Context) IsOrgMember(org, user string) (bool, error) {
 	return false, nil
 }
 
-func (c *Context) CollaboratorPermission(user string) (pull.Permission, error) {
+func (c *Context) CollaboratorPermission(user string) (commit.Permission, error) {
 	if c.CollaboratorsError != nil {
-		return pull.PermissionNone, c.CollaboratorsError
+		return commit.PermissionNone, c.CollaboratorsError
 	}
 	for _, collab := range c.CollaboratorsValue {
 		if collab.Name == user {
 			return collab.Permissions[0].Permission, nil
 		}
 	}
-	return pull.PermissionNone, nil
+	return commit.PermissionNone, nil
 }
 
-func (c *Context) RepositoryCollaborators(minPermission pull.Permission) ([]*pull.Collaborator, error) {
+func (c *Context) RepositoryCollaborators(minPermission commit.Permission) ([]*commit.Collaborator, error) {
 	if c.CollaboratorsError != nil {
 		return nil, c.CollaboratorsError
 	}
@@ -251,7 +252,7 @@ func (c *Context) Reviews() ([]*pull.Review, error) {
 	return c.ReviewsValue, c.ReviewsError
 }
 
-func (c *Context) Teams() (map[string]pull.Permission, error) {
+func (c *Context) Teams() (map[string]commit.Permission, error) {
 	return c.TeamsValue, c.TeamsError
 }
 
@@ -267,7 +268,7 @@ func (c *Context) Labels() ([]string, error) {
 	return c.LabelsValue, c.LabelsError
 }
 
-func (c *Context) RepositoryCustomProperties() (map[string]pull.CustomProperty, error) {
+func (c *Context) RepositoryCustomProperties() (map[string]commit.CustomProperty, error) {
 	return c.RepositoryCustomPropertiesValue, c.RepositoryCustomPropertiesError
 }
 

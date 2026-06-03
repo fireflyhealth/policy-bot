@@ -21,6 +21,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/palantir/policy-bot/commit"
 	"github.com/palantir/policy-bot/policy/common"
 	"github.com/palantir/policy-bot/pull"
 	"github.com/pkg/errors"
@@ -36,7 +37,7 @@ var _ Predicate = (CustomPropertyIsNotNull)(nil)
 var _ Predicate = (CustomPropertyMatchesAnyOf)(nil)
 var _ Predicate = (CustomPropertyMatchesNoneOf)(nil)
 
-func formatCustomProperties(customProperties map[string]pull.CustomProperty) []string {
+func formatCustomProperties(customProperties map[string]commit.CustomProperty) []string {
 	result := []string{}
 	keys := slices.Sorted(maps.Keys(customProperties))
 	for _, k := range keys {

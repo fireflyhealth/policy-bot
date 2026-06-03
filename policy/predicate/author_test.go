@@ -18,6 +18,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/palantir/policy-bot/commit"
 	"github.com/palantir/policy-bot/policy/common"
 	"github.com/palantir/policy-bot/pull"
 	"github.com/palantir/policy-bot/pull/pulltest"
@@ -133,7 +134,7 @@ func TestHasContributorIn(t *testing.T) {
 			"commitAuthorInUsers",
 			&pulltest.Context{
 				AuthorValue: "ttest",
-				CommitsValue: []*pull.Commit{
+				CommitsValue: []*commit.Commit{
 					{
 						SHA:       "abcdef123456789",
 						Author:    "ttest",
@@ -160,7 +161,7 @@ func TestHasContributorIn(t *testing.T) {
 			"commitCommitterInUsers",
 			&pulltest.Context{
 				AuthorValue: "ttest",
-				CommitsValue: []*pull.Commit{
+				CommitsValue: []*commit.Commit{
 					{
 						SHA:       "abcdef123456789",
 						Author:    "ttest",
@@ -192,7 +193,7 @@ func TestHasContributorIn(t *testing.T) {
 						"testorg/team",
 					},
 				},
-				CommitsValue: []*pull.Commit{
+				CommitsValue: []*commit.Commit{
 					{
 						SHA:       "abcdef123456789",
 						Author:    "ttest",
@@ -224,7 +225,7 @@ func TestHasContributorIn(t *testing.T) {
 						"testorg",
 					},
 				},
-				CommitsValue: []*pull.Commit{
+				CommitsValue: []*commit.Commit{
 					{
 						SHA:       "abcdef123456789",
 						Author:    "ttest",
@@ -264,7 +265,7 @@ func TestOnlyHasContributorsIn(t *testing.T) {
 			"authorNotInList",
 			&pulltest.Context{
 				AuthorValue: "ttest",
-				CommitsValue: []*pull.Commit{
+				CommitsValue: []*commit.Commit{
 					{
 						SHA:       "abcdef123456789",
 						Author:    "mhaypenny",
@@ -286,7 +287,7 @@ func TestOnlyHasContributorsIn(t *testing.T) {
 			"containsCommitAuthorNotInList",
 			&pulltest.Context{
 				AuthorValue: "mhaypenny",
-				CommitsValue: []*pull.Commit{
+				CommitsValue: []*commit.Commit{
 					{
 						SHA:       "abcdef123456789",
 						Author:    "mhaypenny",
@@ -313,7 +314,7 @@ func TestOnlyHasContributorsIn(t *testing.T) {
 			"committersInListButAuthorsAreNot",
 			&pulltest.Context{
 				AuthorValue: "mhaypenny",
-				CommitsValue: []*pull.Commit{
+				CommitsValue: []*commit.Commit{
 					{
 						SHA:       "abcdef123456789",
 						Author:    "ttest1",
@@ -345,7 +346,7 @@ func TestOnlyHasContributorsIn(t *testing.T) {
 						"testorg/team",
 					},
 				},
-				CommitsValue: []*pull.Commit{
+				CommitsValue: []*commit.Commit{
 					{
 						SHA:       "abcdef123456789",
 						Author:    "ttest",
@@ -377,7 +378,7 @@ func TestOnlyHasContributorsIn(t *testing.T) {
 						"testorg",
 					},
 				},
-				CommitsValue: []*pull.Commit{
+				CommitsValue: []*commit.Commit{
 					{
 						SHA:       "abcdef123456789",
 						Author:    "ttest",
@@ -411,7 +412,7 @@ func TestAuthorIsOnlyContributor(t *testing.T) {
 			"authorIsOnlyContributor",
 			&pulltest.Context{
 				AuthorValue: "mhaypenny",
-				CommitsValue: []*pull.Commit{
+				CommitsValue: []*commit.Commit{
 					{
 						SHA:       "0cb194c52ee7c6c82110b59ec51b959ecfcb2fa2",
 						Author:    "mhaypenny",
@@ -434,7 +435,7 @@ func TestAuthorIsOnlyContributor(t *testing.T) {
 			"authorIsOnlyContributorViaWeb",
 			&pulltest.Context{
 				AuthorValue: "mhaypenny",
-				CommitsValue: []*pull.Commit{
+				CommitsValue: []*commit.Commit{
 					{
 						SHA:             "0cb194c52ee7c6c82110b59ec51b959ecfcb2fa2",
 						Author:          "mhaypenny",
@@ -453,7 +454,7 @@ func TestAuthorIsOnlyContributor(t *testing.T) {
 			"authorIsNotOnlyAuthor",
 			&pulltest.Context{
 				AuthorValue: "mhaypenny",
-				CommitsValue: []*pull.Commit{
+				CommitsValue: []*commit.Commit{
 					{
 						SHA:       "0cb194c52ee7c6c82110b59ec51b959ecfcb2fa2",
 						Author:    "mhaypenny",
@@ -476,7 +477,7 @@ func TestAuthorIsOnlyContributor(t *testing.T) {
 			"authorIsNotOnlyCommitter",
 			&pulltest.Context{
 				AuthorValue: "mhaypenny",
-				CommitsValue: []*pull.Commit{
+				CommitsValue: []*commit.Commit{
 					{
 						SHA:       "0cb194c52ee7c6c82110b59ec51b959ecfcb2fa2",
 						Author:    "mhaypenny",
@@ -506,7 +507,7 @@ func TestAuthorIsNotOnlyContributor(t *testing.T) {
 			"authorIsOnlyContributor",
 			&pulltest.Context{
 				AuthorValue: "mhaypenny",
-				CommitsValue: []*pull.Commit{
+				CommitsValue: []*commit.Commit{
 					{
 						SHA:       "0cb194c52ee7c6c82110b59ec51b959ecfcb2fa2",
 						Author:    "mhaypenny",
@@ -529,7 +530,7 @@ func TestAuthorIsNotOnlyContributor(t *testing.T) {
 			"authorIsNotOnlyAuthor",
 			&pulltest.Context{
 				AuthorValue: "mhaypenny",
-				CommitsValue: []*pull.Commit{
+				CommitsValue: []*commit.Commit{
 					{
 						SHA:       "0cb194c52ee7c6c82110b59ec51b959ecfcb2fa2",
 						Author:    "mhaypenny",
@@ -552,7 +553,7 @@ func TestAuthorIsNotOnlyContributor(t *testing.T) {
 			"authorIsNotOnlyCommitter",
 			&pulltest.Context{
 				AuthorValue: "mhaypenny",
-				CommitsValue: []*pull.Commit{
+				CommitsValue: []*commit.Commit{
 					{
 						SHA:       "0cb194c52ee7c6c82110b59ec51b959ecfcb2fa2",
 						Author:    "mhaypenny",

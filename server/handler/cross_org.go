@@ -20,6 +20,7 @@ import (
 
 	"github.com/google/go-github/v85/github"
 	"github.com/palantir/go-githubapp/githubapp"
+	"github.com/palantir/policy-bot/commit"
 	"github.com/palantir/policy-bot/pull"
 	"github.com/pkg/errors"
 )
@@ -30,7 +31,7 @@ type CrossOrgMembershipContext struct {
 	installations githubapp.InstallationsService
 	clientCreator githubapp.ClientCreator
 
-	mbrCtxs map[string]pull.MembershipContext
+	mbrCtxs map[string]commit.MembershipContext
 }
 
 func NewCrossOrgMembershipContext(ctx context.Context, client *github.Client, orgName string, installations githubapp.InstallationsService, clientCreator githubapp.ClientCreator) *CrossOrgMembershipContext {
@@ -39,13 +40,13 @@ func NewCrossOrgMembershipContext(ctx context.Context, client *github.Client, or
 		lookupClient:  client,
 		installations: installations,
 		clientCreator: clientCreator,
-		mbrCtxs:       make(map[string]pull.MembershipContext),
+		mbrCtxs:       make(map[string]commit.MembershipContext),
 	}
 	mbrCtx.mbrCtxs[orgName] = pull.NewGitHubMembershipContext(ctx, client)
 	return mbrCtx
 }
 
-func (c *CrossOrgMembershipContext) getCtxForOrg(name string) (pull.MembershipContext, error) {
+func (c *CrossOrgMembershipContext) getCtxForOrg(name string) (commit.MembershipContext, error) {
 	mbrCtx, ok := c.mbrCtxs[name]
 	if !ok {
 		org, _, err := c.lookupClient.Organizations.Get(c.ctx, name)

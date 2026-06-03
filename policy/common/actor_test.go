@@ -18,7 +18,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/palantir/policy-bot/pull"
+	"github.com/palantir/policy-bot/commit"
 	"github.com/palantir/policy-bot/pull/pulltest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -33,17 +33,17 @@ func TestIsActor(t *testing.T) {
 		OrgMemberships: map[string][]string{
 			"mhaypenny": {"cool-org", "regular-org"},
 		},
-		CollaboratorsValue: []*pull.Collaborator{
+		CollaboratorsValue: []*commit.Collaborator{
 			{
 				Name: "mhaypenny",
-				Permissions: []pull.CollaboratorPermission{
-					{Permission: pull.PermissionAdmin},
+				Permissions: []commit.CollaboratorPermission{
+					{Permission: commit.PermissionAdmin},
 				},
 			},
 			{
 				Name: "jstrawnickel",
-				Permissions: []pull.CollaboratorPermission{
-					{Permission: pull.PermissionWrite},
+				Permissions: []commit.CollaboratorPermission{
+					{Permission: commit.PermissionWrite},
 				},
 			},
 		},
@@ -106,7 +106,7 @@ func TestIsActor(t *testing.T) {
 
 	t.Run("permissions", func(t *testing.T) {
 		a := &Actors{
-			Permissions: []pull.Permission{pull.PermissionTriage},
+			Permissions: []commit.Permission{commit.PermissionTriage},
 		}
 
 		assertActor(t, a, "mhaypenny")
