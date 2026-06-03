@@ -116,9 +116,10 @@ func (loc Locator) toV4(ctx context.Context, client *githubv4.Client) (*v4PullRe
 	return &v4, nil
 }
 
-// GitHubContext is a Context implementation that gets information from GitHub.
-// A new instance must be created for each request.
-type GitHubContext struct {
+// GitHubPullRequestContext is a Context implementation that gets information
+// from GitHub for a pull request. A new instance must be created for each
+// request.
+type GitHubPullRequestContext struct {
 	commit.MembershipContext
 
 	ctx         context.Context
@@ -149,11 +150,11 @@ type GitHubContext struct {
 	repositoryCustomProperties map[string]commit.CustomProperty
 }
 
-// NewGitHubContext creates a new pull.Context that makes GitHub requests to
-// obtain information. It caches responses for the lifetime of the context. The
-// pull request passed to the context must contain at least the base repository
-// and the number or the function panics.
-func NewGitHubContext(
+// NewGitHubPullRequestContext creates a new pull.Context that makes GitHub
+// requests to obtain information. It caches responses for the lifetime of the
+// context. The pull request passed to the context must contain at least the
+// base repository and the number or the function panics.
+func NewGitHubPullRequestContext(
 	ctx context.Context,
 	mbrCtx commit.MembershipContext,
 	globalCache GlobalCache,
@@ -170,7 +171,7 @@ func NewGitHubContext(
 		return nil, err
 	}
 
-	return &GitHubContext{
+	return &GitHubPullRequestContext{
 		MembershipContext: mbrCtx,
 
 		ctx:         ctx,
@@ -187,19 +188,19 @@ func NewGitHubContext(
 	}, nil
 }
 
-func (ghc *GitHubContext) EvaluationTimestamp() time.Time {
+func (ghc *GitHubPullRequestContext) EvaluationTimestamp() time.Time {
 	return ghc.evalTimestamp
 }
 
-func (ghc *GitHubContext) RepositoryOwner() string {
+func (ghc *GitHubPullRequestContext) RepositoryOwner() string {
 	return ghc.owner
 }
 
-func (ghc *GitHubContext) RepositoryName() string {
+func (ghc *GitHubPullRequestContext) RepositoryName() string {
 	return ghc.repo
 }
 
-func (ghc *GitHubContext) RepositoryCustomProperties() (map[string]commit.CustomProperty, error) {
+func (ghc *GitHubPullRequestContext) RepositoryCustomProperties() (map[string]commit.CustomProperty, error) {
 	if ghc.repositoryCustomProperties == nil {
 		if err := ghc.loadRepositoryCustomProperties(); err != nil {
 			return nil, err
@@ -209,7 +210,7 @@ func (ghc *GitHubContext) RepositoryCustomProperties() (map[string]commit.Custom
 	return ghc.repositoryCustomProperties, nil
 }
 
-func (ghc *GitHubContext) loadRepositoryCustomProperties() error {
+func (ghc *GitHubPullRequestContext) loadRepositoryCustomProperties() error {
 	values, _, err := ghc.client.Repositories.GetAllCustomPropertyValues(ghc.ctx, ghc.owner, ghc.repo)
 	if err != nil {
 		return errors.Wrap(err, "failed to load repository custom properties")
@@ -233,11 +234,11 @@ func (ghc *GitHubContext) loadRepositoryCustomProperties() error {
 	return nil
 }
 
-func (ghc *GitHubContext) Number() int {
+func (ghc *GitHubPullRequestContext) Number() int {
 	return ghc.number
 }
 
-func (ghc *GitHubContext) Title() string {
+func (ghc *GitHubPullRequestContext) Title() string {
 	return ghc.pr.Title
 }
 
@@ -248,7 +249,7 @@ type v4PullRequestWithEditedAt struct {
 	Body         string
 }
 
-func (ghc *GitHubContext) Body() (*Body, error) {
+func (ghc *GitHubPullRequestContext) Body() (*Body, error) {
 	var q struct {
 		Repository struct {
 			PullRequest v4PullRequestWithEditedAt `graphql:"pullRequest(number: $number)"`
@@ -272,34 +273,34 @@ func (ghc *GitHubContext) Body() (*Body, error) {
 	}, nil
 }
 
-func (ghc *GitHubContext) Author() string {
+func (ghc *GitHubPullRequestContext) Author() string {
 	return ghc.pr.Author.GetV3Login()
 }
 
-func (ghc *GitHubContext) CreatedAt() time.Time {
+func (ghc *GitHubPullRequestContext) CreatedAt() time.Time {
 	return ghc.pr.CreatedAt
 }
 
-func (ghc *GitHubContext) IsOpen() bool {
+func (ghc *GitHubPullRequestContext) IsOpen() bool {
 	return strings.ToLower(ghc.pr.State) == "open"
 }
 
-func (ghc *GitHubContext) IsClosed() bool {
+func (ghc *GitHubPullRequestContext) IsClosed() bool {
 	return strings.ToLower(ghc.pr.State) == "closed"
 }
 
-func (ghc *GitHubContext) HeadSHA() string {
+func (ghc *GitHubPullRequestContext) HeadSHA() string {
 	return ghc.pr.HeadRefOID
 }
 
-func (ghc *GitHubContext) IsDraft() bool {
+func (ghc *GitHubPullRequestContext) IsDraft() bool {
 	return ghc.pr.IsDraft
 }
 
 // Branches returns the names of the base and head branch. If the head branch
 // is from another repository (it is a fork) then the branch name is
 // `owner:branchName`.
-func (ghc *GitHubContext) Branches() (base string, head string) {
+func (ghc *GitHubPullRequestContext) Branches() (base string, head string) {
 	base = ghc.pr.BaseRefName
 	head = ghc.pr.HeadRefName
 	if ghc.pr.IsCrossRepository {
@@ -308,7 +309,7 @@ func (ghc *GitHubContext) Branches() (base string, head string) {
 	return
 }
 
-func (ghc *GitHubContext) ChangedFiles() ([]*commit.File, error) {
+func (ghc *GitHubPullRequestContext) ChangedFiles() ([]*commit.File, error) {
 	// Check if changed files exceeds the limit
 	if ghc.pr.ChangedFiles > MaxPullRequestFiles {
 		return nil, errors.Errorf("number of changed files (%d) exceeds limit (%d)", ghc.pr.ChangedFiles, MaxPullRequestFiles)
@@ -366,7 +367,7 @@ func (ghc *GitHubContext) ChangedFiles() ([]*commit.File, error) {
 	return ghc.files, nil
 }
 
-func (ghc *GitHubContext) Commits() ([]*commit.Commit, error) {
+func (ghc *GitHubPullRequestContext) Commits() ([]*commit.Commit, error) {
 	if ghc.commits == nil {
 		err := ghc.loadPagedData()
 		if err != nil {
@@ -379,7 +380,7 @@ func (ghc *GitHubContext) Commits() ([]*commit.Commit, error) {
 	return ghc.commits, nil
 }
 
-func (ghc *GitHubContext) PushedAt(sha string) (time.Time, error) {
+func (ghc *GitHubPullRequestContext) PushedAt(sha string) (time.Time, error) {
 	repoID := ghc.pr.BaseRepository.DatabaseID
 	if ghc.pushedAt == nil {
 		ghc.pushedAt = make(map[string]time.Time)
@@ -444,7 +445,7 @@ func (ghc *GitHubContext) PushedAt(sha string) (time.Time, error) {
 // entries during the lifetime of the context.
 //
 // The local cache must be initialized before calling tryPushedAt.
-func (ghc *GitHubContext) tryPushedAt(repoID int64, sha string) (time.Time, error) {
+func (ghc *GitHubPullRequestContext) tryPushedAt(repoID int64, sha string) (time.Time, error) {
 	if t, ok := ghc.pushedAt[sha]; ok {
 		return t, nil
 	}
@@ -460,7 +461,7 @@ func (ghc *GitHubContext) tryPushedAt(repoID int64, sha string) (time.Time, erro
 // nextChildCommit returns the child commit for the given SHA or nil if the SHA
 // is the head of the pull request. A child commit is a commit that has SHA as
 // a parent.
-func (ghc *GitHubContext) nextChildCommit(sha string) (*commit.Commit, error) {
+func (ghc *GitHubPullRequestContext) nextChildCommit(sha string) (*commit.Commit, error) {
 	if sha == ghc.HeadSHA() {
 		// Optimization: exit early if asked about the head SHA
 		return nil, nil
@@ -479,7 +480,7 @@ func (ghc *GitHubContext) nextChildCommit(sha string) (*commit.Commit, error) {
 	return nil, nil
 }
 
-func (ghc *GitHubContext) Comments() ([]*Comment, error) {
+func (ghc *GitHubPullRequestContext) Comments() ([]*Comment, error) {
 	if ghc.comments == nil {
 		if err := ghc.loadPagedData(); err != nil {
 			return nil, err
@@ -488,7 +489,7 @@ func (ghc *GitHubContext) Comments() ([]*Comment, error) {
 	return ghc.comments, nil
 }
 
-func (ghc *GitHubContext) Reviews() ([]*Review, error) {
+func (ghc *GitHubPullRequestContext) Reviews() ([]*Review, error) {
 	if ghc.reviews == nil {
 		if err := ghc.loadPagedData(); err != nil {
 			return nil, err
@@ -497,7 +498,7 @@ func (ghc *GitHubContext) Reviews() ([]*Review, error) {
 	return ghc.reviews, nil
 }
 
-func (ghc *GitHubContext) RepositoryCollaborators(minPermission commit.Permission) ([]*commit.Collaborator, error) {
+func (ghc *GitHubPullRequestContext) RepositoryCollaborators(minPermission commit.Permission) ([]*commit.Collaborator, error) {
 	if ghc.collaborators == nil {
 		ghc.collaborators = make(map[commit.Permission][]*commit.Collaborator)
 	}
@@ -625,7 +626,7 @@ func (ghc *GitHubContext) RepositoryCollaborators(minPermission commit.Permissio
 	return ghc.collaborators[minPermission], nil
 }
 
-func (ghc *GitHubContext) CollaboratorPermission(user string) (commit.Permission, error) {
+func (ghc *GitHubPullRequestContext) CollaboratorPermission(user string) (commit.Permission, error) {
 	if ghc.permissions == nil {
 		ghc.permissions = make(map[string]commit.Permission)
 	}
@@ -686,7 +687,7 @@ func findUserIndex(user string, users []v4Actor) int {
 	return -1
 }
 
-func (ghc *GitHubContext) RequestedReviewers() ([]*Reviewer, error) {
+func (ghc *GitHubPullRequestContext) RequestedReviewers() ([]*Reviewer, error) {
 	if ghc.reviewers == nil {
 		if err := ghc.loadRequestedReviewers(); err != nil {
 			return nil, err
@@ -695,7 +696,7 @@ func (ghc *GitHubContext) RequestedReviewers() ([]*Reviewer, error) {
 	return ghc.reviewers, nil
 }
 
-func (ghc *GitHubContext) loadRequestedReviewers() error {
+func (ghc *GitHubPullRequestContext) loadRequestedReviewers() error {
 	var q struct {
 		Repository struct {
 			PullRequest struct {
@@ -756,7 +757,7 @@ func (ghc *GitHubContext) loadRequestedReviewers() error {
 	return nil
 }
 
-func (ghc *GitHubContext) Teams() (map[string]commit.Permission, error) {
+func (ghc *GitHubPullRequestContext) Teams() (map[string]commit.Permission, error) {
 	if ghc.teams == nil {
 		opt := &github.ListOptions{
 			PerPage: 100,
@@ -781,7 +782,7 @@ func (ghc *GitHubContext) Teams() (map[string]commit.Permission, error) {
 	return ghc.teams, nil
 }
 
-func (ghc *GitHubContext) LatestStatuses() (map[string]string, error) {
+func (ghc *GitHubPullRequestContext) LatestStatuses() (map[string]string, error) {
 	if ghc.statuses == nil {
 		statuses, err := ghc.getStatuses()
 		if err != nil {
@@ -801,7 +802,7 @@ func (ghc *GitHubContext) LatestStatuses() (map[string]string, error) {
 	return ghc.statuses, nil
 }
 
-func (ghc *GitHubContext) getStatuses() (map[string]string, error) {
+func (ghc *GitHubPullRequestContext) getStatuses() (map[string]string, error) {
 	opt := &github.ListOptions{
 		PerPage: 100,
 	}
@@ -823,7 +824,7 @@ func (ghc *GitHubContext) getStatuses() (map[string]string, error) {
 	return statuses, nil
 }
 
-func (ghc *GitHubContext) getCheckStatuses() (map[string]string, error) {
+func (ghc *GitHubPullRequestContext) getCheckStatuses() (map[string]string, error) {
 	opt := &github.ListCheckRunsOptions{
 		ListOptions: github.ListOptions{
 			PerPage: 100,
@@ -856,7 +857,7 @@ func (ghc *GitHubContext) getCheckStatuses() (map[string]string, error) {
 	return statuses, nil
 }
 
-func (ghc *GitHubContext) LatestWorkflowRuns() (map[string][]string, error) {
+func (ghc *GitHubPullRequestContext) LatestWorkflowRuns() (map[string][]string, error) {
 	if ghc.workflowRuns != nil {
 		return ghc.workflowRuns, nil
 	}
@@ -941,7 +942,7 @@ func (ghc *GitHubContext) LatestWorkflowRuns() (map[string][]string, error) {
 	return ghc.workflowRuns, nil
 }
 
-func (ghc *GitHubContext) Labels() ([]string, error) {
+func (ghc *GitHubPullRequestContext) Labels() ([]string, error) {
 	if ghc.labels == nil {
 		issueLabels, _, err := ghc.client.Issues.ListLabelsByIssue(ghc.ctx, ghc.owner, ghc.repo, ghc.number, &github.ListOptions{
 			Page:    0,
@@ -960,7 +961,7 @@ func (ghc *GitHubContext) Labels() ([]string, error) {
 	return ghc.labels, nil
 }
 
-func (ghc *GitHubContext) loadPagedData() error {
+func (ghc *GitHubPullRequestContext) loadPagedData() error {
 	// This query is tuned to use a single GraphQL rate limit point per
 	// execution. For most PRs, this means loading all commits, comments, and
 	// reviews in one request with the minimal possible cost.
@@ -1050,7 +1051,7 @@ func (ghc *GitHubContext) loadPagedData() error {
 	return nil
 }
 
-func (ghc *GitHubContext) processCommits(rawCommits []*v4PullRequestCommit) ([]*commit.Commit, error) {
+func (ghc *GitHubPullRequestContext) processCommits(rawCommits []*v4PullRequestCommit) ([]*commit.Commit, error) {
 	commits := make([]*commit.Commit, 0, len(rawCommits))
 	foundHead := false
 
@@ -1070,7 +1071,7 @@ func (ghc *GitHubContext) processCommits(rawCommits []*v4PullRequestCommit) ([]*
 	return commits, nil
 }
 
-func (ghc *GitHubContext) loadPushedAt(sha string) (time.Time, error) {
+func (ghc *GitHubPullRequestContext) loadPushedAt(sha string) (time.Time, error) {
 	opt := &github.ListOptions{
 		PerPage: 100,
 	}
