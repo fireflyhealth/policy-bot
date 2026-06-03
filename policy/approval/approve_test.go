@@ -1009,3 +1009,115 @@ func TestSortCommits(t *testing.T) {
 		})
 	}
 }
+
+func TestRuleEvaluateCommit(t *testing.T) {
+	logger := zerolog.New(os.Stdout)
+	ctx := logger.WithContext(context.Background())
+
+	matchMain := common.NewCompiledRegexp(regexp.MustCompile("^main$"))
+	matchOther := common.NewCompiledRegexp(regexp.MustCompile("^other$"))
+
+	cctx := &pulltest.Context{BranchBaseName: "main"}
+
+	t.Run("emptyRuleApproved", func(t *testing.T) {
+		r := &Rule{Name: "empty"}
+		res := r.EvaluateCommit(ctx, cctx)
+		require.NoError(t, res.Error)
+		assert.Equal(t, common.StatusApproved, res.Status)
+		assert.Equal(t, "No approval required", res.StatusDescription)
+	})
+
+	t.Run("predicateSatisfiedApproved", func(t *testing.T) {
+		r := &Rule{
+			Name: "branch",
+			Predicates: predicate.Predicates{
+				TargetsBranch: &predicate.TargetsBranch{Pattern: matchMain},
+			},
+		}
+		res := r.EvaluateCommit(ctx, cctx)
+		require.NoError(t, res.Error)
+		assert.Equal(t, common.StatusApproved, res.Status)
+	})
+
+	t.Run("predicateNotSatisfiedSkipped", func(t *testing.T) {
+		r := &Rule{
+			Name: "branch",
+			Predicates: predicate.Predicates{
+				TargetsBranch: &predicate.TargetsBranch{Pattern: matchOther},
+			},
+		}
+		res := r.EvaluateCommit(ctx, cctx)
+		require.NoError(t, res.Error)
+		assert.Equal(t, common.StatusSkipped, res.Status)
+	})
+
+	t.Run("pullRequestPredicateErrors", func(t *testing.T) {
+		r := &Rule{
+			Name: "author",
+			Predicates: predicate.Predicates{
+				HasAuthorIn: &predicate.HasAuthorIn{
+					Actors: common.Actors{Users: []string{"alice"}},
+				},
+			},
+		}
+		res := r.EvaluateCommit(ctx, cctx)
+		require.Error(t, res.Error)
+		assert.Contains(t, res.Error.Error(), "requires pull request data")
+	})
+
+	t.Run("requiresCountErrors", func(t *testing.T) {
+		r := &Rule{
+			Name:     "approvals",
+			Requires: Requires{Count: 1},
+		}
+		res := r.EvaluateCommit(ctx, cctx)
+		require.Error(t, res.Error)
+		assert.Contains(t, res.Error.Error(), "requires 1 approvals")
+	})
+
+	t.Run("conditionSatisfiedApproved", func(t *testing.T) {
+		r := &Rule{
+			Name: "cond",
+			Requires: Requires{
+				Conditions: predicate.Predicates{
+					TargetsBranch: &predicate.TargetsBranch{Pattern: matchMain},
+				},
+			},
+		}
+		res := r.EvaluateCommit(ctx, cctx)
+		require.NoError(t, res.Error)
+		assert.Equal(t, common.StatusApproved, res.Status)
+		assert.Equal(t, "Required conditions satisfied", res.StatusDescription)
+	})
+
+	t.Run("conditionNotSatisfiedPending", func(t *testing.T) {
+		r := &Rule{
+			Name: "cond",
+			Requires: Requires{
+				Conditions: predicate.Predicates{
+					TargetsBranch: &predicate.TargetsBranch{Pattern: matchOther},
+				},
+			},
+		}
+		res := r.EvaluateCommit(ctx, cctx)
+		require.NoError(t, res.Error)
+		assert.Equal(t, common.StatusPending, res.Status)
+		assert.Equal(t, "0/1 required conditions", res.StatusDescription)
+	})
+
+	t.Run("pullRequestConditionErrors", func(t *testing.T) {
+		r := &Rule{
+			Name: "cond",
+			Requires: Requires{
+				Conditions: predicate.Predicates{
+					HasAuthorIn: &predicate.HasAuthorIn{
+						Actors: common.Actors{Users: []string{"alice"}},
+					},
+				},
+			},
+		}
+		res := r.EvaluateCommit(ctx, cctx)
+		require.Error(t, res.Error)
+		assert.Contains(t, res.Error.Error(), "requires pull request data")
+	})
+}

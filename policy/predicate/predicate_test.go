@@ -87,3 +87,31 @@ func TestEvaluatePullRequest(t *testing.T) {
 		assert.Contains(t, err.Error(), "unknown predicate type")
 	})
 }
+
+func TestEvaluateCommit(t *testing.T) {
+	ctx := context.Background()
+	cctx := &pulltest.Context{}
+
+	t.Run("commitPredicate", func(t *testing.T) {
+		p := &stubCommitPredicate{satisfied: true}
+		res, err := EvaluateCommit(ctx, p, cctx)
+		require.NoError(t, err)
+		assert.True(t, p.called)
+		assert.True(t, res.Satisfied)
+	})
+
+	t.Run("pullRequestPredicateErrors", func(t *testing.T) {
+		p := &stubPRPredicate{satisfied: true}
+		res, err := EvaluateCommit(ctx, p, cctx)
+		require.Error(t, err)
+		assert.Nil(t, res)
+		assert.False(t, p.called)
+		assert.Contains(t, err.Error(), "requires pull request data")
+	})
+
+	t.Run("unknown", func(t *testing.T) {
+		_, err := EvaluateCommit(ctx, stubUnknown{}, cctx)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "unknown predicate type")
+	})
+}
