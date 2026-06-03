@@ -18,9 +18,9 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/palantir/policy-bot/commit"
 	"github.com/palantir/policy-bot/policy/approval"
 	"github.com/palantir/policy-bot/policy/common"
-	"github.com/palantir/policy-bot/pull"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -221,7 +221,7 @@ func TestPullEvaluationOptions_SetValuesFromEnv(t *testing.T) {
 				opts.ApprovalDefaults = &approval.Defaults{
 					Options: &approval.Options{
 						IgnoreCommitsBy: &common.Actors{
-							Permissions: []pull.Permission{pull.PermissionAdmin, pull.PermissionWrite},
+							Permissions: []commit.Permission{commit.PermissionAdmin, commit.PermissionWrite},
 						},
 					},
 				}
@@ -233,7 +233,7 @@ func TestPullEvaluationOptions_SetValuesFromEnv(t *testing.T) {
 				opts.ApprovalDefaults = &approval.Defaults{
 					Options: &approval.Options{
 						IgnoreCommitsBy: &common.Actors{
-							Permissions: []pull.Permission{},
+							Permissions: []commit.Permission{},
 						},
 					},
 				}

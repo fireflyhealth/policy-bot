@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/palantir/policy-bot/commit"
 	"github.com/palantir/policy-bot/policy/common"
 	"github.com/palantir/policy-bot/pull"
 	"github.com/pkg/errors"
@@ -212,7 +213,7 @@ func (pred *FileAdded) Evaluate(ctx context.Context, prctx pull.Context) (*commo
 
 	addedFiles := []string{}
 	for _, f := range changedFiles {
-		if f.Status == pull.FileAdded {
+		if f.Status == commit.FileAdded {
 			addedFiles = append(addedFiles, f.Filename)
 
 			if anyMatches(pred.Paths, f.Filename) || anyGlobMatches(pred.Globs, f.Filename) {
@@ -259,7 +260,7 @@ func (pred *FileNotAdded) Evaluate(ctx context.Context, prctx pull.Context) (*co
 
 	addedFiles := []string{}
 	for _, f := range changedFiles {
-		if f.Status == pull.FileAdded {
+		if f.Status == commit.FileAdded {
 			addedFiles = append(addedFiles, f.Filename)
 
 			if anyMatches(pred.Paths, f.Filename) || anyGlobMatches(pred.Globs, f.Filename) {
@@ -305,7 +306,7 @@ func (pred *FileDeleted) Evaluate(ctx context.Context, prctx pull.Context) (*com
 
 	deletedFiles := []string{}
 	for _, f := range changedFiles {
-		if f.Status == pull.FileDeleted {
+		if f.Status == commit.FileDeleted {
 			deletedFiles = append(deletedFiles, f.Filename)
 
 			if anyMatches(pred.Paths, f.Filename) || anyGlobMatches(pred.Globs, f.Filename) {
@@ -351,7 +352,7 @@ func (pred *FileNotDeleted) Evaluate(ctx context.Context, prctx pull.Context) (*
 
 	deletedFiles := []string{}
 	for _, f := range changedFiles {
-		if f.Status == pull.FileDeleted {
+		if f.Status == commit.FileDeleted {
 			deletedFiles = append(deletedFiles, f.Filename)
 
 			if anyMatches(pred.Paths, f.Filename) || anyGlobMatches(pred.Globs, f.Filename) {

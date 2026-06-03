@@ -18,6 +18,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/palantir/policy-bot/commit"
 	"github.com/palantir/policy-bot/policy/common"
 	"github.com/palantir/policy-bot/pull"
 	"github.com/palantir/policy-bot/pull/pulltest"
@@ -33,13 +34,13 @@ func TestHasValidSignatures(t *testing.T) {
 			"ValidGpgSignature",
 			&pulltest.Context{
 				AuthorValue: "mhaypenny",
-				CommitsValue: []*pull.Commit{
+				CommitsValue: []*commit.Commit{
 					{
 						SHA:       "abcdef123456789",
 						Author:    "mhaypenny",
 						Committer: "mhaypenny",
-						Signature: &pull.Signature{
-							Type:    pull.SignatureGpg,
+						Signature: &commit.Signature{
+							Type:    commit.SignatureGpg,
 							IsValid: true,
 							Signer:  "ttest",
 							State:   "VALID",
@@ -58,13 +59,13 @@ func TestHasValidSignatures(t *testing.T) {
 			"ValidSshSignature",
 			&pulltest.Context{
 				AuthorValue: "mhaypenny",
-				CommitsValue: []*pull.Commit{
+				CommitsValue: []*commit.Commit{
 					{
 						SHA:       "abcdef123456789",
 						Author:    "mhaypenny",
 						Committer: "mhaypenny",
-						Signature: &pull.Signature{
-							Type:           pull.SignatureSSH,
+						Signature: &commit.Signature{
+							Type:           commit.SignatureSSH,
 							IsValid:        true,
 							Signer:         "ttest",
 							State:          "VALID",
@@ -83,13 +84,13 @@ func TestHasValidSignatures(t *testing.T) {
 			"InvalidSignature",
 			&pulltest.Context{
 				AuthorValue: "mhaypenny",
-				CommitsValue: []*pull.Commit{
+				CommitsValue: []*commit.Commit{
 					{
 						SHA:       "abcdef123456789",
 						Author:    "mhaypenny",
 						Committer: "mhaypenny",
-						Signature: &pull.Signature{
-							Type:    pull.SignatureGpg,
+						Signature: &commit.Signature{
+							Type:    commit.SignatureGpg,
 							IsValid: false,
 							Signer:  "ttest",
 							State:   "INVALID",
@@ -108,7 +109,7 @@ func TestHasValidSignatures(t *testing.T) {
 			"NoSignature",
 			&pulltest.Context{
 				AuthorValue: "mhaypenny",
-				CommitsValue: []*pull.Commit{
+				CommitsValue: []*commit.Commit{
 					{
 						SHA:       "abcdef123456789",
 						Author:    "mhaypenny",
@@ -148,13 +149,13 @@ func TestHasValidSignaturesBy(t *testing.T) {
 			"ValidSignatureByUser",
 			&pulltest.Context{
 				AuthorValue: "mhaypenny",
-				CommitsValue: []*pull.Commit{
+				CommitsValue: []*commit.Commit{
 					{
 						SHA:       "abcdef123456789",
 						Author:    "mhaypenny",
 						Committer: "mhaypenny",
-						Signature: &pull.Signature{
-							Type:    pull.SignatureGpg,
+						Signature: &commit.Signature{
+							Type:    commit.SignatureGpg,
 							IsValid: true,
 							Signer:  "mhaypenny",
 							State:   "VALID",
@@ -177,13 +178,13 @@ func TestHasValidSignaturesBy(t *testing.T) {
 			"ValidSignatureButNotUser",
 			&pulltest.Context{
 				AuthorValue: "badcommitter",
-				CommitsValue: []*pull.Commit{
+				CommitsValue: []*commit.Commit{
 					{
 						SHA:       "abcdef123456789",
 						Author:    "badcommitter",
 						Committer: "badcommitter",
-						Signature: &pull.Signature{
-							Type:    pull.SignatureGpg,
+						Signature: &commit.Signature{
+							Type:    commit.SignatureGpg,
 							IsValid: true,
 							Signer:  "badcommitter",
 							State:   "VALID",
@@ -211,13 +212,13 @@ func TestHasValidSignaturesBy(t *testing.T) {
 						"testorg/team",
 					},
 				},
-				CommitsValue: []*pull.Commit{
+				CommitsValue: []*commit.Commit{
 					{
 						SHA:       "abcdef123456789",
 						Author:    "ttest",
 						Committer: "ttest",
-						Signature: &pull.Signature{
-							Type:    pull.SignatureGpg,
+						Signature: &commit.Signature{
+							Type:    commit.SignatureGpg,
 							IsValid: true,
 							Signer:  "ttest",
 							State:   "VALID",
@@ -240,7 +241,7 @@ func TestHasValidSignaturesBy(t *testing.T) {
 			"NoSignature",
 			&pulltest.Context{
 				AuthorValue: "mhaypenny",
-				CommitsValue: []*pull.Commit{
+				CommitsValue: []*commit.Commit{
 					{
 						SHA:       "abcdef123456789",
 						Author:    "mhaypenny",
@@ -272,13 +273,13 @@ func TestHasValidSignaturesByKeys(t *testing.T) {
 			"ValidSignatureByValidKey",
 			&pulltest.Context{
 				AuthorValue: "mhaypenny",
-				CommitsValue: []*pull.Commit{
+				CommitsValue: []*commit.Commit{
 					{
 						SHA:       "abcdef123456789",
 						Author:    "ttest",
 						Committer: "ttest",
-						Signature: &pull.Signature{
-							Type:    pull.SignatureGpg,
+						Signature: &commit.Signature{
+							Type:    commit.SignatureGpg,
 							IsValid: true,
 							Signer:  "mhaypenny",
 							State:   "VALID",
@@ -297,13 +298,13 @@ func TestHasValidSignaturesByKeys(t *testing.T) {
 			"ValidSignatureByInvalidKey",
 			&pulltest.Context{
 				AuthorValue: "mhaypenny",
-				CommitsValue: []*pull.Commit{
+				CommitsValue: []*commit.Commit{
 					{
 						SHA:       "abcdef123456789",
 						Author:    "ttest",
 						Committer: "ttest",
-						Signature: &pull.Signature{
-							Type:    pull.SignatureGpg,
+						Signature: &commit.Signature{
+							Type:    commit.SignatureGpg,
 							IsValid: true,
 							Signer:  "mhaypenny",
 							State:   "VALID",
@@ -322,13 +323,13 @@ func TestHasValidSignaturesByKeys(t *testing.T) {
 			"InvalidSignatureByInvalidKey",
 			&pulltest.Context{
 				AuthorValue: "mhaypenny",
-				CommitsValue: []*pull.Commit{
+				CommitsValue: []*commit.Commit{
 					{
 						SHA:       "abcdef123456789",
 						Author:    "ttest",
 						Committer: "ttest",
-						Signature: &pull.Signature{
-							Type:    pull.SignatureGpg,
+						Signature: &commit.Signature{
+							Type:    commit.SignatureGpg,
 							IsValid: false,
 							Signer:  "mhaypenny",
 							State:   "BAD_EMAIL",

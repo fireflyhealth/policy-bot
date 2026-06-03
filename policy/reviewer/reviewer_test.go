@@ -20,6 +20,7 @@ import (
 	"math/rand"
 	"testing"
 
+	"github.com/palantir/policy-bot/commit"
 	"github.com/palantir/policy-bot/policy/common"
 	"github.com/palantir/policy-bot/pull"
 	"github.com/palantir/policy-bot/pull/pulltest"
@@ -202,7 +203,7 @@ func TestSelectReviewers(t *testing.T) {
 			Name:   "admin-users",
 			Status: common.StatusPending,
 			ReviewRequestRule: &common.ReviewRequestRule{
-				Permissions:    []pull.Permission{pull.PermissionAdmin},
+				Permissions:    []commit.Permission{commit.PermissionAdmin},
 				RequiredCount:  1,
 				RequestedCount: 1,
 				Mode:           common.RequestModeRandomUsers,
@@ -254,7 +255,7 @@ func TestSelectReviewers_UserPermission(t *testing.T) {
 			Name:   "user-permissions",
 			Status: common.StatusPending,
 			ReviewRequestRule: &common.ReviewRequestRule{
-				Permissions:    []pull.Permission{pull.PermissionTriage, pull.PermissionMaintain},
+				Permissions:    []commit.Permission{commit.PermissionTriage, commit.PermissionMaintain},
 				RequiredCount:  2,
 				RequestedCount: 2,
 				Mode:           common.RequestModeAllUsers,
@@ -282,7 +283,7 @@ func TestSelectReviewers_TeamPermission(t *testing.T) {
 			Name:   "team-permissions",
 			Status: common.StatusPending,
 			ReviewRequestRule: &common.ReviewRequestRule{
-				Permissions:   []pull.Permission{pull.PermissionAdmin, pull.PermissionMaintain},
+				Permissions:   []commit.Permission{commit.PermissionAdmin, commit.PermissionMaintain},
 				RequiredCount: 1,
 				Mode:          common.RequestModeTeams,
 			},
@@ -405,100 +406,100 @@ func makeContext() pull.Context {
 			"comment-approver":      {"everyone", "cool-org"},
 			"review-approver":       {"everyone", "even-cooler-org"},
 		},
-		CollaboratorsValue: []*pull.Collaborator{
+		CollaboratorsValue: []*commit.Collaborator{
 			{
 				Name: "mhaypenny",
-				Permissions: []pull.CollaboratorPermission{
-					{Permission: pull.PermissionAdmin},
+				Permissions: []commit.CollaboratorPermission{
+					{Permission: commit.PermissionAdmin},
 				},
 			},
 			{
 				Name: "org-owner",
-				Permissions: []pull.CollaboratorPermission{
-					{Permission: pull.PermissionAdmin},
+				Permissions: []commit.CollaboratorPermission{
+					{Permission: commit.PermissionAdmin},
 				},
 			},
 			{
 				Name: "user-team-admin",
-				Permissions: []pull.CollaboratorPermission{
-					{Permission: pull.PermissionAdmin, ViaRepo: true},
+				Permissions: []commit.CollaboratorPermission{
+					{Permission: commit.PermissionAdmin, ViaRepo: true},
 				},
 			},
 			{
 				Name: "user-direct-admin",
-				Permissions: []pull.CollaboratorPermission{
-					{Permission: pull.PermissionAdmin, ViaRepo: true},
+				Permissions: []commit.CollaboratorPermission{
+					{Permission: commit.PermissionAdmin, ViaRepo: true},
 				},
 			},
 			{
 				Name: "user-team-write",
-				Permissions: []pull.CollaboratorPermission{
-					{Permission: pull.PermissionWrite, ViaRepo: true},
+				Permissions: []commit.CollaboratorPermission{
+					{Permission: commit.PermissionWrite, ViaRepo: true},
 				},
 			},
 			{
 				Name: "contributor-committer",
-				Permissions: []pull.CollaboratorPermission{
-					{Permission: pull.PermissionWrite},
+				Permissions: []commit.CollaboratorPermission{
+					{Permission: commit.PermissionWrite},
 				},
 			},
 			{
 				Name: "contributor-author",
-				Permissions: []pull.CollaboratorPermission{
-					{Permission: pull.PermissionWrite},
+				Permissions: []commit.CollaboratorPermission{
+					{Permission: commit.PermissionWrite},
 				},
 			},
 			{
 				Name: "review-approver",
-				Permissions: []pull.CollaboratorPermission{
-					{Permission: pull.PermissionWrite},
+				Permissions: []commit.CollaboratorPermission{
+					{Permission: commit.PermissionWrite},
 				},
 			},
 			{
 				Name: "maintainer",
-				Permissions: []pull.CollaboratorPermission{
-					{Permission: pull.PermissionMaintain, ViaRepo: true},
+				Permissions: []commit.CollaboratorPermission{
+					{Permission: commit.PermissionMaintain, ViaRepo: true},
 				},
 			},
 			{
 				// note: currently not possible in GitHub
 				Name: "indirect-maintainer",
-				Permissions: []pull.CollaboratorPermission{
-					{Permission: pull.PermissionMaintain},
+				Permissions: []commit.CollaboratorPermission{
+					{Permission: commit.PermissionMaintain},
 				},
 			},
 			{
 				Name: "triager",
-				Permissions: []pull.CollaboratorPermission{
-					{Permission: pull.PermissionTriage, ViaRepo: true},
+				Permissions: []commit.CollaboratorPermission{
+					{Permission: commit.PermissionTriage, ViaRepo: true},
 				},
 			},
 			{
 				// note: currently not possible in GitHub
 				Name: "indirect-triager",
-				Permissions: []pull.CollaboratorPermission{
-					{Permission: pull.PermissionTriage},
+				Permissions: []commit.CollaboratorPermission{
+					{Permission: commit.PermissionTriage},
 				},
 			},
 			{
 				Name: "org-owner-team-maintainer",
-				Permissions: []pull.CollaboratorPermission{
-					{Permission: pull.PermissionAdmin, ViaRepo: false},
-					{Permission: pull.PermissionMaintain, ViaRepo: true},
+				Permissions: []commit.CollaboratorPermission{
+					{Permission: commit.PermissionAdmin, ViaRepo: false},
+					{Permission: commit.PermissionMaintain, ViaRepo: true},
 				},
 			},
 			{
 				Name: "direct-write-team-maintainer",
-				Permissions: []pull.CollaboratorPermission{
-					{Permission: pull.PermissionMaintain, ViaRepo: true},
-					{Permission: pull.PermissionWrite, ViaRepo: true},
+				Permissions: []commit.CollaboratorPermission{
+					{Permission: commit.PermissionMaintain, ViaRepo: true},
+					{Permission: commit.PermissionWrite, ViaRepo: true},
 				},
 			},
 		},
-		TeamsValue: map[string]pull.Permission{
-			"team-write":    pull.PermissionWrite,
-			"team-admin":    pull.PermissionAdmin,
-			"team-maintain": pull.PermissionMaintain,
+		TeamsValue: map[string]commit.Permission{
+			"team-write":    commit.PermissionWrite,
+			"team-admin":    commit.PermissionAdmin,
+			"team-maintain": commit.PermissionMaintain,
 		},
 		TeamMemberships: map[string][]string{
 			"user-team-admin":    {"everyone/team-admin"},

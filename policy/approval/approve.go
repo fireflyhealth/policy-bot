@@ -21,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/palantir/policy-bot/commit"
 	"github.com/palantir/policy-bot/policy/common"
 	"github.com/palantir/policy-bot/policy/predicate"
 	"github.com/palantir/policy-bot/pull"
@@ -367,7 +368,7 @@ func (r *Rule) filterInvalidCandidates(ctx context.Context, prctx pull.Context, 
 
 // filteredCommits returns the relevant commits for the evaluation ordered in
 // history order, from most to least recent.
-func (r *Rule) filteredCommits(ctx context.Context, prctx pull.Context) ([]*pull.Commit, error) {
+func (r *Rule) filteredCommits(ctx context.Context, prctx pull.Context) ([]*commit.Commit, error) {
 	commits, err := prctx.Commits()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list commits")
@@ -382,7 +383,7 @@ func (r *Rule) filteredCommits(ctx context.Context, prctx pull.Context) ([]*pull
 		return commits, nil
 	}
 
-	var filtered []*pull.Commit
+	var filtered []*commit.Commit
 	for _, c := range commits {
 		if ignoreUpdates {
 			if isUpdateMerge(commits, c) {
@@ -456,7 +457,7 @@ func statusDescription(approved bool, result common.RequiresResult, candidates [
 	return desc.String()
 }
 
-func isUpdateMerge(commits []*pull.Commit, c *pull.Commit) bool {
+func isUpdateMerge(commits []*commit.Commit, c *commit.Commit) bool {
 	// must be a simple merge commit (exactly 2 parents)
 	if len(c.Parents) != 2 {
 		return false
@@ -477,7 +478,7 @@ func isUpdateMerge(commits []*pull.Commit, c *pull.Commit) bool {
 	return shas[c.Parents[0]] && !shas[c.Parents[1]]
 }
 
-func isIgnoredCommit(ctx context.Context, prctx pull.Context, actors *common.Actors, c *pull.Commit) (bool, error) {
+func isIgnoredCommit(ctx context.Context, prctx pull.Context, actors *common.Actors, c *commit.Commit) (bool, error) {
 	for _, u := range c.Users() {
 		ignored, err := actors.IsActor(ctx, prctx, u)
 		if err != nil {
@@ -500,13 +501,13 @@ func numberOfApprovals(count int) string {
 
 // sortCommits orders commits in history order starting from head. It must be
 // called on the unfiltered set of commits.
-func sortCommits(commits []*pull.Commit, head string) []*pull.Commit {
-	commitsBySHA := make(map[string]*pull.Commit)
+func sortCommits(commits []*commit.Commit, head string) []*commit.Commit {
+	commitsBySHA := make(map[string]*commit.Commit)
 	for _, c := range commits {
 		commitsBySHA[c.SHA] = c
 	}
 
-	ordered := make([]*pull.Commit, 0, len(commits))
+	ordered := make([]*commit.Commit, 0, len(commits))
 	for {
 		c, ok := commitsBySHA[head]
 		if !ok {

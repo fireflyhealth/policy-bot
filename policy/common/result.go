@@ -15,7 +15,7 @@
 package common
 
 import (
-	"github.com/palantir/policy-bot/pull"
+	"github.com/palantir/policy-bot/commit"
 )
 
 type EvaluationStatus int
@@ -53,7 +53,7 @@ type ReviewRequestRule struct {
 	Teams          []string
 	Users          []string
 	Organizations  []string
-	Permissions    []pull.Permission
+	Permissions    []commit.Permission
 	RequiredCount  int
 	RequestedCount int
 

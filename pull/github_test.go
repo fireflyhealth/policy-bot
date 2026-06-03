@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/google/go-github/v85/github"
+	"github.com/palantir/policy-bot/commit"
 	"github.com/shurcooL/githubv4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -45,21 +46,21 @@ func TestChangedFiles(t *testing.T) {
 	assert.Equal(t, 2, filesRule.Count, "no http request was made")
 
 	assert.Equal(t, "path/foo.txt", files[0].Filename)
-	assert.Equal(t, FileAdded, files[0].Status)
+	assert.Equal(t, commit.FileAdded, files[0].Status)
 
 	assert.Equal(t, "path/bar.txt", files[1].Filename)
-	assert.Equal(t, FileDeleted, files[1].Status)
+	assert.Equal(t, commit.FileDeleted, files[1].Status)
 
 	assert.Equal(t, "README.md", files[2].Filename)
-	assert.Equal(t, FileModified, files[2].Status)
+	assert.Equal(t, commit.FileModified, files[2].Status)
 
 	assert.Equal(t, "path/old.txt", files[3].Filename)
-	assert.Equal(t, FileDeleted, files[3].Status)
+	assert.Equal(t, commit.FileDeleted, files[3].Status)
 	assert.Equal(t, 0, files[3].Additions)
 	assert.Equal(t, 0, files[3].Deletions)
 
 	assert.Equal(t, "path/new.txt", files[4].Filename)
-	assert.Equal(t, FileAdded, files[4].Status)
+	assert.Equal(t, commit.FileAdded, files[4].Status)
 	assert.Equal(t, 2, files[4].Additions)
 	assert.Equal(t, 4, files[4].Deletions)
 
@@ -469,24 +470,24 @@ func TestCollaboratorPermission(t *testing.T) {
 
 	p, err := ctx.CollaboratorPermission("direct-admin")
 	require.NoError(t, err)
-	assert.Equal(t, PermissionAdmin, p, "incorrect permission for direct-admin")
+	assert.Equal(t, commit.PermissionAdmin, p, "incorrect permission for direct-admin")
 	assert.Equal(t, 1, rule.Count, "incorrect http request count")
 
 	rule.Count = 0
 
 	p, err = ctx.CollaboratorPermission("direct")
 	require.NoError(t, err)
-	assert.Equal(t, PermissionNone, p, "incorrect permission for missing user")
+	assert.Equal(t, commit.PermissionNone, p, "incorrect permission for missing user")
 	assert.Equal(t, 2, rule.Count, "incorrect http request count")
 
 	p, err = ctx.CollaboratorPermission("direct-admin")
 	require.NoError(t, err)
-	assert.Equal(t, PermissionAdmin, p, "incorrect permission for direct-admin")
+	assert.Equal(t, commit.PermissionAdmin, p, "incorrect permission for direct-admin")
 	assert.Equal(t, 2, rule.Count, "cached data was not used on second request")
 
 	p, err = ctx.CollaboratorPermission("team-maintain")
 	require.NoError(t, err)
-	assert.Equal(t, PermissionMaintain, p, "incorrect permission for team-maintain")
+	assert.Equal(t, commit.PermissionMaintain, p, "incorrect permission for team-maintain")
 }
 
 func TestRepositoryCollaborators(t *testing.T) {
@@ -520,7 +521,7 @@ func TestRepositoryCollaborators(t *testing.T) {
 
 	ctx := makeContext(t, rp, nil, nil)
 
-	collaborators, err := ctx.RepositoryCollaborators(PermissionNone)
+	collaborators, err := ctx.RepositoryCollaborators(commit.PermissionNone)
 	require.NoError(t, err)
 
 	require.Len(t, collaborators, 8, "incorrect number of collaborators")
@@ -528,52 +529,52 @@ func TestRepositoryCollaborators(t *testing.T) {
 
 	c0 := collaborators[0]
 	assert.Equal(t, "direct-admin", c0.Name)
-	assert.Equal(t, []CollaboratorPermission{
-		{Permission: PermissionAdmin, ViaRepo: true},
+	assert.Equal(t, []commit.CollaboratorPermission{
+		{Permission: commit.PermissionAdmin, ViaRepo: true},
 	}, c0.Permissions)
 
 	c1 := collaborators[1]
 	assert.Equal(t, "direct-triage", c1.Name)
-	assert.Equal(t, []CollaboratorPermission{
-		{Permission: PermissionTriage, ViaRepo: true},
+	assert.Equal(t, []commit.CollaboratorPermission{
+		{Permission: commit.PermissionTriage, ViaRepo: true},
 	}, c1.Permissions)
 
 	c2 := collaborators[2]
 	assert.Equal(t, "direct-write-team-maintain", c2.Name)
-	assert.Equal(t, []CollaboratorPermission{
-		{Permission: PermissionMaintain, ViaRepo: true},
-		{Permission: PermissionWrite, ViaRepo: true},
+	assert.Equal(t, []commit.CollaboratorPermission{
+		{Permission: commit.PermissionMaintain, ViaRepo: true},
+		{Permission: commit.PermissionWrite, ViaRepo: true},
 	}, c2.Permissions)
 
 	c3 := collaborators[3]
 	assert.Equal(t, "org-owner", c3.Name)
-	assert.Equal(t, []CollaboratorPermission{
-		{Permission: PermissionAdmin, ViaRepo: false},
+	assert.Equal(t, []commit.CollaboratorPermission{
+		{Permission: commit.PermissionAdmin, ViaRepo: false},
 	}, c3.Permissions)
 
 	c4 := collaborators[4]
 	assert.Equal(t, "org-owner-team-maintain", c4.Name)
-	assert.Equal(t, []CollaboratorPermission{
-		{Permission: PermissionAdmin, ViaRepo: false},
-		{Permission: PermissionMaintain, ViaRepo: true},
+	assert.Equal(t, []commit.CollaboratorPermission{
+		{Permission: commit.PermissionAdmin, ViaRepo: false},
+		{Permission: commit.PermissionMaintain, ViaRepo: true},
 	}, c4.Permissions)
 
 	c5 := collaborators[5]
 	assert.Equal(t, "org-read", c5.Name)
-	assert.Equal(t, []CollaboratorPermission{
-		{Permission: PermissionRead, ViaRepo: false},
+	assert.Equal(t, []commit.CollaboratorPermission{
+		{Permission: commit.PermissionRead, ViaRepo: false},
 	}, c5.Permissions)
 
 	c6 := collaborators[6]
 	assert.Equal(t, "team-admin", c6.Name)
-	assert.Equal(t, []CollaboratorPermission{
-		{Permission: PermissionAdmin, ViaRepo: true},
+	assert.Equal(t, []commit.CollaboratorPermission{
+		{Permission: commit.PermissionAdmin, ViaRepo: true},
 	}, c6.Permissions)
 
 	c7 := collaborators[7]
 	assert.Equal(t, "team-maintain", c7.Name)
-	assert.Equal(t, []CollaboratorPermission{
-		{Permission: PermissionMaintain, ViaRepo: true},
+	assert.Equal(t, []commit.CollaboratorPermission{
+		{Permission: commit.PermissionMaintain, ViaRepo: true},
 	}, c7.Permissions)
 }
 

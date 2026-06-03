@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/palantir/policy-bot/commit"
 	"github.com/palantir/policy-bot/policy/common"
 	"github.com/palantir/policy-bot/pull"
 	"github.com/pkg/errors"
@@ -170,7 +171,7 @@ func (pred *HasValidSignaturesByKeys) Evaluate(ctx context.Context, prctx pull.C
 		commitHashes = append(commitHashes, c.SHA)
 		// Only GPG signatures are valid for this predicate
 		switch c.Signature.Type {
-		case pull.SignatureGpg:
+		case commit.SignatureGpg:
 			commitSHAs, ok := keys[c.Signature.KeyID]
 			if ok {
 				keys[c.Signature.KeyID] = append(commitSHAs, c.SHA)
@@ -209,13 +210,13 @@ func (pred *HasValidSignaturesByKeys) Trigger() common.Trigger {
 	return common.TriggerCommit
 }
 
-func hasValidSignature(ctx context.Context, commit *pull.Commit) (bool, string) {
-	if commit.Signature == nil {
-		return false, fmt.Sprintf("Commit %.10s has no signature", commit.SHA)
+func hasValidSignature(ctx context.Context, c *commit.Commit) (bool, string) {
+	if c.Signature == nil {
+		return false, fmt.Sprintf("Commit %.10s has no signature", c.SHA)
 	}
-	if !commit.Signature.IsValid {
-		reason := commit.Signature.State
-		return false, fmt.Sprintf("Commit %.10s has an invalid signature due to %s", commit.SHA, reason)
+	if !c.Signature.IsValid {
+		reason := c.Signature.State
+		return false, fmt.Sprintf("Commit %.10s has an invalid signature due to %s", c.SHA, reason)
 	}
 	return true, ""
 }

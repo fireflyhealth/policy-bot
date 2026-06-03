@@ -19,6 +19,7 @@ import (
 	"slices"
 	"sort"
 
+	"github.com/palantir/policy-bot/commit"
 	"github.com/palantir/policy-bot/pull"
 	"github.com/pkg/errors"
 )
@@ -37,7 +38,7 @@ type Actors struct {
 
 	// A list of GitHub collaborator permissions that are allowed. Values may
 	// be any of "admin", "maintain", "write", "triage", and "read".
-	Permissions []pull.Permission `yaml:"permissions,omitempty" json:"permissions"`
+	Permissions []commit.Permission `yaml:"permissions,omitempty" json:"permissions"`
 }
 
 // IsZero returns true if no conditions for actors are defined.
@@ -49,19 +50,19 @@ func (a *Actors) IsZero() bool {
 // GetPermissions returns unique permissions ordered from most to least
 // permissive. It includes the permissions from the deprecated Admins and
 // WriteCollaborators fields.
-func (a *Actors) GetPermissions() []pull.Permission {
-	permSet := make(map[pull.Permission]struct{})
+func (a *Actors) GetPermissions() []commit.Permission {
+	permSet := make(map[commit.Permission]struct{})
 	for _, p := range a.Permissions {
 		permSet[p] = struct{}{}
 	}
 	if a.Admins {
-		permSet[pull.PermissionAdmin] = struct{}{}
+		permSet[commit.PermissionAdmin] = struct{}{}
 	}
 	if a.WriteCollaborators {
-		permSet[pull.PermissionWrite] = struct{}{}
+		permSet[commit.PermissionWrite] = struct{}{}
 	}
 
-	perms := make([]pull.Permission, 0, len(permSet))
+	perms := make([]commit.Permission, 0, len(permSet))
 	for p := range permSet {
 		perms = append(perms, p)
 	}
@@ -104,7 +105,7 @@ func (a *Actors) IsActor(ctx context.Context, prctx pull.Context, user string) (
 		if err != nil {
 			return false, err
 		}
-		if userPerm == pull.PermissionNone {
+		if userPerm == commit.PermissionNone {
 			return false, nil
 		}
 

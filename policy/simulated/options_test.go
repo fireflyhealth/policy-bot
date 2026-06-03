@@ -20,7 +20,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/palantir/policy-bot/pull"
+	"github.com/palantir/policy-bot/commit"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -53,9 +53,9 @@ func TestOptionsFromRequest(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, []string{"iignore"}, opt.IgnoreComments.Users)
-	assert.Equal(t, pull.PermissionRead, opt.IgnoreComments.Permissions[0])
+	assert.Equal(t, commit.PermissionRead, opt.IgnoreComments.Permissions[0])
 	assert.Equal(t, []string{"iignore"}, opt.IgnoreReviews.Users)
-	assert.Equal(t, pull.PermissionRead, opt.IgnoreReviews.Permissions[0])
+	assert.Equal(t, commit.PermissionRead, opt.IgnoreReviews.Permissions[0])
 
 	assert.Equal(t, "iignore", opt.AddComments[0].Author)
 	assert.Equal(t, ":+1:", opt.AddComments[0].Body)
