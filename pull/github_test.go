@@ -731,7 +731,7 @@ func makeContext(t *testing.T, rp *ResponsePlayer, pr *github.PullRequest, gc Gl
 		pr = defaultTestPR()
 	}
 
-	prctx, err := NewGitHubContext(ctx, mbrCtx, gc, client, v4client, Locator{
+	prctx, err := NewGitHubPullRequestContext(ctx, mbrCtx, gc, client, v4client, Locator{
 		Owner:  pr.GetBase().GetRepo().GetOwner().GetLogin(),
 		Repo:   pr.GetBase().GetRepo().GetName(),
 		Number: pr.GetNumber(),
