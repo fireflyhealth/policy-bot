@@ -185,12 +185,12 @@ type RepositoryTestCase struct {
 	ExpectedPredicateResult *common.PredicateResult
 }
 
-func runRepositoryTestCase(t *testing.T, p PullRequestPredicate, cases []RepositoryTestCase) {
+func runRepositoryTestCase(t *testing.T, p CommitPredicate, cases []RepositoryTestCase) {
 	ctx := context.Background()
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			predicateResult, err := p.EvaluatePullRequest(ctx, tc.context)
+			predicateResult, err := p.EvaluateCommit(ctx, tc.context)
 			if assert.NoError(t, err, "evaluation failed") {
 				assertPredicateResult(t, tc.ExpectedPredicateResult, predicateResult)
 			}

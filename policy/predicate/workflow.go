@@ -20,8 +20,8 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/palantir/policy-bot/commit"
 	"github.com/palantir/policy-bot/policy/common"
-	"github.com/palantir/policy-bot/pull"
 	"github.com/pkg/errors"
 )
 
@@ -37,10 +37,10 @@ func NewHasWorkflowResult(workflows []string, conclusions []string) *HasWorkflow
 	}
 }
 
-var _ PullRequestPredicate = HasWorkflowResult{}
+var _ CommitPredicate = HasWorkflowResult{}
 
-func (pred HasWorkflowResult) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
-	workflowRuns, err := prctx.LatestWorkflowRuns()
+func (pred HasWorkflowResult) EvaluateCommit(ctx context.Context, cctx commit.Context) (*common.PredicateResult, error) {
+	workflowRuns, err := cctx.LatestWorkflowRuns()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list latest workflow runs")
 	}
