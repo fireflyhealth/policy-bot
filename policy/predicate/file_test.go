@@ -1137,7 +1137,7 @@ type FileTestCase struct {
 	ExpectedPredicateResult *common.PredicateResult
 }
 
-func runFileTests(t *testing.T, p Predicate, cases []FileTestCase) {
+func runFileTests(t *testing.T, p PullRequestPredicate, cases []FileTestCase) {
 	ctx := context.Background()
 
 	for _, tc := range cases {
@@ -1146,7 +1146,7 @@ func runFileTests(t *testing.T, p Predicate, cases []FileTestCase) {
 				ChangedFilesValue: tc.Files,
 			}
 
-			predicateResult, err := p.Evaluate(ctx, prctx)
+			predicateResult, err := p.EvaluatePullRequest(ctx, prctx)
 			if assert.NoError(t, err, "evaluation failed") {
 				assertPredicateResult(t, tc.ExpectedPredicateResult, predicateResult)
 			}

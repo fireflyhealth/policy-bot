@@ -70,12 +70,12 @@ type HasLabelsTestCase struct {
 	ExpectedPredicateResult *common.PredicateResult
 }
 
-func runLabelsTestCase(t *testing.T, p Predicate, cases []HasLabelsTestCase) {
+func runLabelsTestCase(t *testing.T, p PullRequestPredicate, cases []HasLabelsTestCase) {
 	ctx := context.Background()
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			predicateResult, err := p.Evaluate(ctx, tc.context)
+			predicateResult, err := p.EvaluatePullRequest(ctx, tc.context)
 			if assert.NoError(t, err, "evaluation failed") {
 				assertPredicateResult(t, tc.ExpectedPredicateResult, predicateResult)
 			}

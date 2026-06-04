@@ -135,7 +135,7 @@ func (h *Simulate) getSimulatedResult(ctx context.Context, installation githubap
 		return nil, errors.Wrap(err, "failed to get policy evaluator")
 	}
 
-	result := evaluator.Evaluate(ctx, simulatedCtx)
+	result := evaluator.EvaluatePullRequest(ctx, simulatedCtx)
 	return &result, nil
 }
 

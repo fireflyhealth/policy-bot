@@ -37,7 +37,7 @@ func (eval *StaticEvaluator) Trigger() common.Trigger {
 	return common.TriggerStatic
 }
 
-func (eval *StaticEvaluator) Evaluate(ctx context.Context, prctx pull.Context) common.Result {
+func (eval *StaticEvaluator) EvaluatePullRequest(ctx context.Context, prctx pull.Context) common.Result {
 	return common.Result(*eval)
 }
 
@@ -384,7 +384,7 @@ func TestEvaluator(t *testing.T) {
 			},
 		}
 
-		r := eval.Evaluate(ctx, prctx)
+		r := eval.EvaluatePullRequest(ctx, prctx)
 		require.NoError(t, r.Error)
 
 		assert.Equal(t, common.StatusDisapproved, r.Status)
@@ -402,7 +402,7 @@ func TestEvaluator(t *testing.T) {
 			},
 		}
 
-		r := eval.Evaluate(ctx, prctx)
+		r := eval.EvaluatePullRequest(ctx, prctx)
 		require.NoError(t, r.Error)
 
 		assert.Equal(t, common.StatusPending, r.Status)
@@ -419,7 +419,7 @@ func TestEvaluator(t *testing.T) {
 			},
 		}
 
-		r := eval.Evaluate(ctx, prctx)
+		r := eval.EvaluatePullRequest(ctx, prctx)
 
 		assert.EqualError(t, r.Error, "approval failed")
 		assert.Equal(t, common.StatusSkipped, r.Status)
@@ -435,7 +435,7 @@ func TestEvaluator(t *testing.T) {
 			},
 		}
 
-		r := eval.Evaluate(ctx, prctx)
+		r := eval.EvaluatePullRequest(ctx, prctx)
 		require.NoError(t, r.Error)
 
 		assert.Equal(t, "policy", r.Name)
@@ -571,6 +571,6 @@ func TestConfigMarshalYaml(t *testing.T) {
 	}
 }
 
-func castToResult(e common.Evaluator) *common.Result {
+func castToResult(e common.PullRequestEvaluator) *common.Result {
 	return (*common.Result)(e.(*StaticEvaluator))
 }

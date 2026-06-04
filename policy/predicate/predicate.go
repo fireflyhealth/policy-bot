@@ -21,9 +21,11 @@ import (
 	"github.com/palantir/policy-bot/pull"
 )
 
-type Predicate interface {
+// PullRequestPredicate is a pull-request-scoped predicate. It is
+// evaluated against a pull.Context.
+type PullRequestPredicate interface {
 	common.Triggered
 
-	// Evaluate determines if the predicate is satisfied.
-	Evaluate(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error)
+	// EvaluatePullRequest determines if the predicate is satisfied.
+	EvaluatePullRequest(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error)
 }

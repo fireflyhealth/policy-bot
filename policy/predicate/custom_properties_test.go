@@ -295,7 +295,7 @@ func TestCustomPropertiesMatchesNoneOf(t *testing.T) {
 
 type customPropertyTestCase struct {
 	description             string
-	predicate               Predicate
+	predicate               PullRequestPredicate
 	ExpectedPredicateResult *common.PredicateResult
 	ExpectedErr             func(error) bool
 }
@@ -320,7 +320,7 @@ func runCustomPropertyTestCase(t *testing.T, prctx pull.Context, cases []customP
 	ctx := context.Background()
 	for _, tc := range cases {
 		t.Run(tc.description, func(t *testing.T) {
-			predicateResult, err := tc.predicate.Evaluate(ctx, prctx)
+			predicateResult, err := tc.predicate.EvaluatePullRequest(ctx, prctx)
 			if tc.ExpectedErr != nil {
 				if !assert.Error(t, err, "expected error but got none") {
 					return

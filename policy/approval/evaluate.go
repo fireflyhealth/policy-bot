@@ -24,7 +24,7 @@ import (
 )
 
 type evaluator struct {
-	root common.Evaluator
+	root common.PullRequestEvaluator
 }
 
 func (eval *evaluator) Trigger() common.Trigger {
@@ -34,9 +34,9 @@ func (eval *evaluator) Trigger() common.Trigger {
 	return common.TriggerStatic
 }
 
-func (eval *evaluator) Evaluate(ctx context.Context, prctx pull.Context) (res common.Result) {
+func (eval *evaluator) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (res common.Result) {
 	if eval.root != nil {
-		res = eval.root.Evaluate(ctx, prctx)
+		res = eval.root.EvaluatePullRequest(ctx, prctx)
 	} else {
 		zerolog.Ctx(ctx).Debug().Msg("No approval policy defined; skipping")
 
@@ -56,11 +56,11 @@ func (r *RuleRequirement) Trigger() common.Trigger {
 	return r.rule.Trigger()
 }
 
-func (r *RuleRequirement) Evaluate(ctx context.Context, prctx pull.Context) common.Result {
+func (r *RuleRequirement) EvaluatePullRequest(ctx context.Context, prctx pull.Context) common.Result {
 	log := zerolog.Ctx(ctx).With().Str("rule", r.rule.Name).Logger()
 	ctx = log.WithContext(ctx)
 
-	result := r.rule.Evaluate(ctx, prctx)
+	result := r.rule.EvaluatePullRequest(ctx, prctx)
 	if result.Error == nil {
 		log.Debug().Msgf("rule evaluation resulted in %s:\"%s\"", result.Status, result.StatusDescription)
 	} else {
@@ -77,7 +77,7 @@ func (r *RuleRequirement) Evaluate(ctx context.Context, prctx pull.Context) comm
 }
 
 type OrRequirement struct {
-	requirements []common.Evaluator
+	requirements []common.PullRequestEvaluator
 }
 
 func (r *OrRequirement) Trigger() common.Trigger {
@@ -88,10 +88,10 @@ func (r *OrRequirement) Trigger() common.Trigger {
 	return t
 }
 
-func (r *OrRequirement) Evaluate(ctx context.Context, prctx pull.Context) common.Result {
+func (r *OrRequirement) EvaluatePullRequest(ctx context.Context, prctx pull.Context) common.Result {
 	var children []*common.Result
 	for _, req := range r.requirements {
-		res := req.Evaluate(ctx, prctx)
+		res := req.EvaluatePullRequest(ctx, prctx)
 		children = append(children, &res)
 	}
 
@@ -137,7 +137,7 @@ func (r *OrRequirement) Evaluate(ctx context.Context, prctx pull.Context) common
 }
 
 type AndRequirement struct {
-	requirements []common.Evaluator
+	requirements []common.PullRequestEvaluator
 }
 
 func (r *AndRequirement) Trigger() common.Trigger {
@@ -148,10 +148,10 @@ func (r *AndRequirement) Trigger() common.Trigger {
 	return t
 }
 
-func (r *AndRequirement) Evaluate(ctx context.Context, prctx pull.Context) common.Result {
+func (r *AndRequirement) EvaluatePullRequest(ctx context.Context, prctx pull.Context) common.Result {
 	var children []*common.Result
 	for _, req := range r.requirements {
-		res := req.Evaluate(ctx, prctx)
+		res := req.EvaluatePullRequest(ctx, prctx)
 		children = append(children, &res)
 	}
 

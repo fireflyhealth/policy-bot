@@ -26,9 +26,9 @@ type TargetsBranch struct {
 	Pattern common.Regexp `yaml:"pattern,omitempty"`
 }
 
-var _ Predicate = &TargetsBranch{}
+var _ PullRequestPredicate = &TargetsBranch{}
 
-func (pred *TargetsBranch) Evaluate(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
+func (pred *TargetsBranch) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
 	targetName, _ := prctx.Branches()
 	matches := pred.Pattern.Matches(targetName)
 
@@ -57,9 +57,9 @@ type FromBranch struct {
 	Pattern common.Regexp `yaml:"pattern,omitempty"`
 }
 
-var _ Predicate = &FromBranch{}
+var _ PullRequestPredicate = &FromBranch{}
 
-func (pred *FromBranch) Evaluate(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
+func (pred *FromBranch) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
 	_, sourceBranchName := prctx.Branches()
 	matches := pred.Pattern.Matches(sourceBranchName)
 

@@ -60,102 +60,102 @@ func (p Predicates) IsZero() bool {
 	return p == Predicates{}
 }
 
-func (p *Predicates) Predicates() []Predicate {
-	var ps []Predicate
+func (p *Predicates) Predicates() []PullRequestPredicate {
+	var ps []PullRequestPredicate
 
 	if p.ChangedFiles != nil {
-		ps = append(ps, Predicate(p.ChangedFiles))
+		ps = append(ps, PullRequestPredicate(p.ChangedFiles))
 	}
 	if p.NoChangedFiles != nil {
-		ps = append(ps, Predicate(p.NoChangedFiles))
+		ps = append(ps, PullRequestPredicate(p.NoChangedFiles))
 	}
 	if p.OnlyChangedFiles != nil {
-		ps = append(ps, Predicate(p.OnlyChangedFiles))
+		ps = append(ps, PullRequestPredicate(p.OnlyChangedFiles))
 	}
 	if p.FileAdded != nil {
-		ps = append(ps, Predicate(p.FileAdded))
+		ps = append(ps, PullRequestPredicate(p.FileAdded))
 	}
 	if p.FileNotAdded != nil {
-		ps = append(ps, Predicate(p.FileNotAdded))
+		ps = append(ps, PullRequestPredicate(p.FileNotAdded))
 	}
 	if p.FileDeleted != nil {
-		ps = append(ps, Predicate(p.FileDeleted))
+		ps = append(ps, PullRequestPredicate(p.FileDeleted))
 	}
 	if p.FileNotDeleted != nil {
-		ps = append(ps, Predicate(p.FileNotDeleted))
+		ps = append(ps, PullRequestPredicate(p.FileNotDeleted))
 	}
 
 	if p.HasAuthorIn != nil {
-		ps = append(ps, Predicate(p.HasAuthorIn))
+		ps = append(ps, PullRequestPredicate(p.HasAuthorIn))
 	}
 	if p.HasContributorIn != nil {
-		ps = append(ps, Predicate(p.HasContributorIn))
+		ps = append(ps, PullRequestPredicate(p.HasContributorIn))
 	}
 	if p.OnlyHasContributorsIn != nil {
-		ps = append(ps, Predicate(p.OnlyHasContributorsIn))
+		ps = append(ps, PullRequestPredicate(p.OnlyHasContributorsIn))
 	}
 	if p.AuthorIsOnlyContributor != nil {
-		ps = append(ps, Predicate(p.AuthorIsOnlyContributor))
+		ps = append(ps, PullRequestPredicate(p.AuthorIsOnlyContributor))
 	}
 
 	if p.TargetsBranch != nil {
-		ps = append(ps, Predicate(p.TargetsBranch))
+		ps = append(ps, PullRequestPredicate(p.TargetsBranch))
 	}
 	if p.FromBranch != nil {
-		ps = append(ps, Predicate(p.FromBranch))
+		ps = append(ps, PullRequestPredicate(p.FromBranch))
 	}
 
 	if p.ModifiedLines != nil {
-		ps = append(ps, Predicate(p.ModifiedLines))
+		ps = append(ps, PullRequestPredicate(p.ModifiedLines))
 	}
 
 	if p.HasStatus != nil {
-		ps = append(ps, Predicate(p.HasStatus))
+		ps = append(ps, PullRequestPredicate(p.HasStatus))
 	}
 
 	if p.HasSuccessfulStatus != nil {
-		ps = append(ps, Predicate(p.HasSuccessfulStatus))
+		ps = append(ps, PullRequestPredicate(p.HasSuccessfulStatus))
 	}
 
 	if p.HasWorkflowResult != nil {
-		ps = append(ps, Predicate(p.HasWorkflowResult))
+		ps = append(ps, PullRequestPredicate(p.HasWorkflowResult))
 	}
 
 	if p.HasLabels != nil {
-		ps = append(ps, Predicate(p.HasLabels))
+		ps = append(ps, PullRequestPredicate(p.HasLabels))
 	}
 
 	if p.Repository != nil {
-		ps = append(ps, Predicate(p.Repository))
+		ps = append(ps, PullRequestPredicate(p.Repository))
 	}
 
 	if p.Title != nil {
-		ps = append(ps, Predicate(p.Title))
+		ps = append(ps, PullRequestPredicate(p.Title))
 	}
 
 	if p.HasValidSignatures != nil {
-		ps = append(ps, Predicate(p.HasValidSignatures))
+		ps = append(ps, PullRequestPredicate(p.HasValidSignatures))
 	}
 
 	if p.HasValidSignaturesBy != nil {
-		ps = append(ps, Predicate(p.HasValidSignaturesBy))
+		ps = append(ps, PullRequestPredicate(p.HasValidSignaturesBy))
 	}
 
 	if p.HasValidSignaturesByKeys != nil {
-		ps = append(ps, Predicate(p.HasValidSignaturesByKeys))
+		ps = append(ps, PullRequestPredicate(p.HasValidSignaturesByKeys))
 	}
 
 	if p.CustomPropertyIsNotNull != nil {
-		ps = append(ps, Predicate(p.CustomPropertyIsNotNull))
+		ps = append(ps, PullRequestPredicate(p.CustomPropertyIsNotNull))
 	}
 	if p.CustomPropertyIsNull != nil {
-		ps = append(ps, Predicate(p.CustomPropertyIsNull))
+		ps = append(ps, PullRequestPredicate(p.CustomPropertyIsNull))
 	}
 	if p.CustomPropertyMatchesAnyOf != nil {
-		ps = append(ps, Predicate(p.CustomPropertyMatchesAnyOf))
+		ps = append(ps, PullRequestPredicate(p.CustomPropertyMatchesAnyOf))
 	}
 	if p.CustomPropertyMatchesNoneOf != nil {
-		ps = append(ps, Predicate(p.CustomPropertyMatchesNoneOf))
+		ps = append(ps, PullRequestPredicate(p.CustomPropertyMatchesNoneOf))
 	}
 
 	return ps

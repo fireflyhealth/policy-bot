@@ -135,14 +135,14 @@ func runBranchesTestCase(t *testing.T, regex string, cases []branchesTestCase) {
 		}
 
 		t.Run(tc.name+" targets_branch", func(t *testing.T) {
-			predicateResult, err := targetsPredicate.Evaluate(ctx, targetsContext)
+			predicateResult, err := targetsPredicate.EvaluatePullRequest(ctx, targetsContext)
 			if assert.NoError(t, err, "targets_branch predicate evaluation failed") {
 				assertPredicateResult(t, tc.ExpectedPredicateResult, predicateResult)
 			}
 		})
 
 		t.Run(tc.name+" from_branch", func(t *testing.T) {
-			predicateResult, err := fromPredicate.Evaluate(ctx, fromContext)
+			predicateResult, err := fromPredicate.EvaluatePullRequest(ctx, fromContext)
 			if assert.NoError(t, err, "from_branch predicate evaluation failed") {
 				assertPredicateResult(t, tc.ExpectedPredicateResult, predicateResult)
 			}

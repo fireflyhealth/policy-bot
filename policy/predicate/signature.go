@@ -27,9 +27,9 @@ import (
 
 type HasValidSignatures bool
 
-var _ Predicate = HasValidSignatures(false)
+var _ PullRequestPredicate = HasValidSignatures(false)
 
-func (pred HasValidSignatures) Evaluate(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
+func (pred HasValidSignatures) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
 	commits, err := prctx.Commits()
 
 	predicateResult := common.PredicateResult{
@@ -75,9 +75,9 @@ type HasValidSignaturesBy struct {
 	common.Actors `yaml:",inline,omitempty"`
 }
 
-var _ Predicate = &HasValidSignaturesBy{}
+var _ PullRequestPredicate = &HasValidSignaturesBy{}
 
-func (pred *HasValidSignaturesBy) Evaluate(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
+func (pred *HasValidSignaturesBy) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
 	commits, err := prctx.Commits()
 
 	predicateResult := common.PredicateResult{
@@ -141,9 +141,9 @@ type HasValidSignaturesByKeys struct {
 	KeyIDs []string `yaml:"key_ids,omitempty"`
 }
 
-var _ Predicate = &HasValidSignaturesByKeys{}
+var _ PullRequestPredicate = &HasValidSignaturesByKeys{}
 
-func (pred *HasValidSignaturesByKeys) Evaluate(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
+func (pred *HasValidSignaturesByKeys) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
 	commits, err := prctx.Commits()
 
 	predicateResult := common.PredicateResult{

@@ -129,12 +129,12 @@ func (m *mockRequirement) Trigger() common.Trigger {
 	return common.TriggerStatic
 }
 
-func (m *mockRequirement) Evaluate(ctx context.Context, prctx pull.Context) common.Result {
+func (m *mockRequirement) EvaluatePullRequest(ctx context.Context, prctx pull.Context) common.Result {
 	return *m.result
 }
 
-func makeRulesResultingIn(es ...common.EvaluationStatus) []common.Evaluator {
-	var requirements []common.Evaluator
+func makeRulesResultingIn(es ...common.EvaluationStatus) []common.PullRequestEvaluator {
+	var requirements []common.PullRequestEvaluator
 	for _, e := range es {
 		requirements = append(requirements, &mockRequirement{
 			result: &common.Result{
@@ -153,7 +153,7 @@ func TestAndRequirement(t *testing.T) {
 	and := &AndRequirement{
 		requirements: makeRulesResultingIn(common.StatusApproved, common.StatusPending),
 	}
-	result := and.Evaluate(ctx, prctx)
+	result := and.EvaluatePullRequest(ctx, prctx)
 	assert.NoError(t, result.Error)
 	assert.Equal(t, common.StatusPending, result.Status)
 
@@ -161,7 +161,7 @@ func TestAndRequirement(t *testing.T) {
 	and = &AndRequirement{
 		requirements: makeRulesResultingIn(common.StatusApproved),
 	}
-	result = and.Evaluate(ctx, prctx)
+	result = and.EvaluatePullRequest(ctx, prctx)
 	assert.NoError(t, result.Error)
 	assert.Equal(t, common.StatusApproved, result.Status)
 
@@ -169,7 +169,7 @@ func TestAndRequirement(t *testing.T) {
 	and = &AndRequirement{
 		requirements: makeRulesResultingIn(common.StatusApproved, common.StatusSkipped),
 	}
-	result = and.Evaluate(ctx, prctx)
+	result = and.EvaluatePullRequest(ctx, prctx)
 	assert.NoError(t, result.Error)
 	assert.Equal(t, common.StatusApproved, result.Status)
 
@@ -177,13 +177,13 @@ func TestAndRequirement(t *testing.T) {
 	and = &AndRequirement{
 		requirements: makeRulesResultingIn(common.StatusSkipped),
 	}
-	result = and.Evaluate(ctx, prctx)
+	result = and.EvaluatePullRequest(ctx, prctx)
 	assert.NoError(t, result.Error)
 	assert.Equal(t, common.StatusSkipped, result.Status)
 
 	// Error blocks approval
 	and = &AndRequirement{
-		requirements: []common.Evaluator{
+		requirements: []common.PullRequestEvaluator{
 			&mockRequirement{
 				result: &common.Result{
 					Status: common.StatusApproved,
@@ -196,7 +196,7 @@ func TestAndRequirement(t *testing.T) {
 			},
 		},
 	}
-	result = and.Evaluate(ctx, prctx)
+	result = and.EvaluatePullRequest(ctx, prctx)
 	assert.Error(t, result.Error)
 }
 
@@ -208,7 +208,7 @@ func TestOrRequirement(t *testing.T) {
 	or := &OrRequirement{
 		requirements: makeRulesResultingIn(common.StatusPending, common.StatusSkipped, common.StatusApproved),
 	}
-	result := or.Evaluate(ctx, prctx)
+	result := or.EvaluatePullRequest(ctx, prctx)
 	assert.NoError(t, result.Error)
 	assert.Equal(t, common.StatusApproved, result.Status)
 
@@ -216,7 +216,7 @@ func TestOrRequirement(t *testing.T) {
 	or = &OrRequirement{
 		requirements: makeRulesResultingIn(common.StatusApproved),
 	}
-	result = or.Evaluate(ctx, prctx)
+	result = or.EvaluatePullRequest(ctx, prctx)
 	assert.NoError(t, result.Error)
 	assert.Equal(t, common.StatusApproved, result.Status)
 
@@ -224,7 +224,7 @@ func TestOrRequirement(t *testing.T) {
 	or = &OrRequirement{
 		requirements: makeRulesResultingIn(common.StatusApproved, common.StatusSkipped),
 	}
-	result = or.Evaluate(ctx, prctx)
+	result = or.EvaluatePullRequest(ctx, prctx)
 	assert.NoError(t, result.Error)
 	assert.Equal(t, common.StatusApproved, result.Status)
 
@@ -232,13 +232,13 @@ func TestOrRequirement(t *testing.T) {
 	or = &OrRequirement{
 		requirements: makeRulesResultingIn(common.StatusSkipped),
 	}
-	result = or.Evaluate(ctx, prctx)
+	result = or.EvaluatePullRequest(ctx, prctx)
 	assert.NoError(t, result.Error)
 	assert.Equal(t, common.StatusSkipped, result.Status)
 
 	// Error does not block approval
 	or = &OrRequirement{
-		requirements: []common.Evaluator{
+		requirements: []common.PullRequestEvaluator{
 			&mockRequirement{
 				result: &common.Result{
 					Status: common.StatusApproved,
@@ -251,7 +251,7 @@ func TestOrRequirement(t *testing.T) {
 			},
 		},
 	}
-	result = or.Evaluate(ctx, prctx)
+	result = or.EvaluatePullRequest(ctx, prctx)
 	assert.NoError(t, result.Error)
 	assert.Equal(t, common.StatusApproved, result.Status)
 }

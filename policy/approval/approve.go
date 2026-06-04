@@ -73,7 +73,7 @@ func (r *Rule) Trigger() common.Trigger {
 	return t
 }
 
-func (r *Rule) Evaluate(ctx context.Context, prctx pull.Context) (res common.Result) {
+func (r *Rule) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (res common.Result) {
 	log := zerolog.Ctx(ctx)
 
 	res.Name = r.Name
@@ -84,7 +84,7 @@ func (r *Rule) Evaluate(ctx context.Context, prctx pull.Context) (res common.Res
 	var predicateResults []*common.PredicateResult
 
 	for _, p := range r.Predicates.Predicates() {
-		result, err := p.Evaluate(ctx, prctx)
+		result, err := p.EvaluatePullRequest(ctx, prctx)
 		if err != nil {
 			res.Error = errors.Wrap(err, "failed to evaluate predicate")
 			return
@@ -252,7 +252,7 @@ func (r *Rule) isApprovedByConditions(ctx context.Context, prctx pull.Context) (
 	var approved int
 
 	for _, c := range conditions {
-		result, err := c.Evaluate(ctx, prctx)
+		result, err := c.EvaluatePullRequest(ctx, prctx)
 		if err != nil {
 			return false, nil, errors.Wrap(err, "failed to evaluate condition")
 		}

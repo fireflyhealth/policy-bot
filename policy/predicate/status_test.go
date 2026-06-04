@@ -173,7 +173,7 @@ func TestHasSuccessfulStatus(t *testing.T) {
 
 type StatusTestSuite struct {
 	nameSuffix        string
-	predicate         Predicate
+	predicate         PullRequestPredicate
 	testCases         []StatusTestCase
 	overrideSatisfied *bool
 }
@@ -184,7 +184,7 @@ type StatusTestCase struct {
 	ExpectedPredicateResult *common.PredicateResult
 }
 
-func runStatusTestCase(t *testing.T, p Predicate, suite StatusTestSuite) {
+func runStatusTestCase(t *testing.T, p PullRequestPredicate, suite StatusTestSuite) {
 	ctx := context.Background()
 
 	for _, tc := range suite.testCases {
@@ -210,7 +210,7 @@ func runStatusTestCase(t *testing.T, p Predicate, suite StatusTestSuite) {
 		}
 
 		t.Run(testName, func(t *testing.T) {
-			predicateResult, err := p.Evaluate(ctx, tc.context)
+			predicateResult, err := p.EvaluatePullRequest(ctx, tc.context)
 			if assert.NoError(t, err, "evaluation failed") {
 				assertPredicateResult(t, tc.ExpectedPredicateResult, predicateResult)
 			}
