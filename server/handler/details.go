@@ -53,6 +53,33 @@ type DetailsState struct {
 	PullRequest *github.PullRequest
 }
 
+// detailsPageData is the data passed to the details template by both the
+// pull-request and commit-scoped details handlers.
+type detailsPageData struct {
+	BasePath  string
+	User      string
+	PolicyURL string
+
+	// Page header fields, populated by either handler.
+	PageTitle      string
+	RepoFullName   string
+	BaseRef        string
+	HeadingHref    string
+	HeadingText    string
+	HeadingTooltip string
+	Title          string
+
+	ExpandRequiredReviewers bool
+
+	Error            error
+	IsTemporaryError bool
+
+	// PullRequest is set only by the pull-request handler. It is consumed by
+	// the reviewers HTMX endpoint, which is only enabled for pull requests.
+	PullRequest *github.PullRequest
+	Result      *common.Result
+}
+
 func (h *Details) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 	state := h.getStateIfAllowed(w, r)
 	if state == nil {
@@ -61,26 +88,22 @@ func (h *Details) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 
 	ctx := state.Ctx
 	evalCtx := state.EvalContext
+	pr := state.PullRequest
 
-	var data struct {
-		BasePath  string
-		User      string
-		PolicyURL string
-
-		ExpandRequiredReviewers bool
-
-		Error            error
-		IsTemporaryError bool
-
-		PullRequest *github.PullRequest
-		Result      *common.Result
+	data := detailsPageData{
+		BasePath:                getBasePath(h.BaseConfig.PublicURL),
+		User:                    state.Username,
+		PolicyURL:               getPolicyURL(pr.GetBase().GetRepo().GetHTMLURL(), evalCtx.Config),
+		PageTitle:               fmt.Sprintf("%s#%d", pr.GetBase().GetRepo().GetFullName(), pr.GetNumber()),
+		RepoFullName:            pr.GetBase().GetRepo().GetFullName(),
+		BaseRef:                 pr.GetBase().GetRef(),
+		HeadingHref:             pr.GetHTMLURL(),
+		HeadingText:             fmt.Sprintf("#%d", pr.GetNumber()),
+		HeadingTooltip:          "View the pull request on GitHub",
+		Title:                   pr.GetTitle(),
+		ExpandRequiredReviewers: h.PullOpts.ExpandRequiredReviewers,
+		PullRequest:             pr,
 	}
-
-	data.BasePath = getBasePath(h.BaseConfig.PublicURL)
-	data.User = state.Username
-	data.PolicyURL = getPolicyURL(state.PullRequest, evalCtx.Config)
-	data.ExpandRequiredReviewers = h.PullOpts.ExpandRequiredReviewers
-	data.PullRequest = state.PullRequest
 
 	evaluator, err := evalCtx.ParseConfig(ctx, common.TriggerAll)
 	if err != nil {
@@ -196,17 +219,18 @@ func (h *Details) render404(w http.ResponseWriter, owner, repo string, number in
 	http.Error(w, msg, http.StatusNotFound)
 }
 
-func getPolicyURL(pr *github.PullRequest, config FetchedConfig) string {
-	base := pr.GetBase().GetRepo().GetHTMLURL()
-	if u, _ := url.Parse(base); u != nil {
+// getPolicyURL returns a URL pointing at the policy file on GitHub. repoURL
+// must be the HTML URL of the repository that triggered the evaluation.
+func getPolicyURL(repoURL string, config FetchedConfig) string {
+	if u, _ := url.Parse(repoURL); u != nil {
 		srcParts := strings.Split(config.Source, "@")
 		if len(srcParts) != 2 {
-			return base
+			return repoURL
 		}
 		u.Path = path.Join(srcParts[0], "blob", srcParts[1], config.Path)
 		return u.String()
 	}
-	return base
+	return repoURL
 }
 
 func getBasePath(publicURL string) string {
