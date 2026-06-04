@@ -33,6 +33,76 @@ const (
 	testMergeGroupMidSHA  = "cccccccccccccccccccccccccccccccccccccccc"
 )
 
+func TestParseMergeQueueRef(t *testing.T) {
+	tests := []struct {
+		name string
+		ref  string
+		want MergeQueueRef
+		ok   bool
+	}{
+		{
+			name: "branch name",
+			ref:  "gh-readonly-queue/main/pr-1-abcdef",
+			want: MergeQueueRef{
+				HeadBranch: "gh-readonly-queue/main/pr-1-abcdef",
+				BaseBranch: "main",
+				BaseSHA:    "abcdef",
+				PRNumber:   1,
+			},
+			ok: true,
+		},
+		{
+			name: "full ref",
+			ref:  "refs/heads/gh-readonly-queue/main/pr-42-0123456789abcdef0123456789abcdef01234567",
+			want: MergeQueueRef{
+				HeadBranch: "gh-readonly-queue/main/pr-42-0123456789abcdef0123456789abcdef01234567",
+				BaseBranch: "main",
+				BaseSHA:    "0123456789abcdef0123456789abcdef01234567",
+				PRNumber:   42,
+			},
+			ok: true,
+		},
+		{
+			name: "base branch with slashes",
+			ref:  "gh-readonly-queue/release/v2/pr-7-deadbeef",
+			want: MergeQueueRef{
+				HeadBranch: "gh-readonly-queue/release/v2/pr-7-deadbeef",
+				BaseBranch: "release/v2",
+				BaseSHA:    "deadbeef",
+				PRNumber:   7,
+			},
+			ok: true,
+		},
+		{
+			name: "missing prefix",
+			ref:  "refs/heads/main",
+		},
+		{
+			name: "missing pr segment",
+			ref:  "gh-readonly-queue/main",
+		},
+		{
+			name: "bad trailing segment",
+			ref:  "gh-readonly-queue/main/feature",
+		},
+		{
+			name: "non-numeric pr",
+			ref:  "gh-readonly-queue/main/pr-abc-deadbeef",
+		},
+		{
+			name: "empty sha",
+			ref:  "gh-readonly-queue/main/pr-1-",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, ok := ParseMergeQueueRef(tt.ref)
+			assert.Equal(t, tt.ok, ok)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
 func TestMergeGroupBranches(t *testing.T) {
 	ctx := makeMergeGroupContext(t, &ResponsePlayer{})
 

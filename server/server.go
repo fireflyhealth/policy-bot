@@ -263,9 +263,16 @@ func New(c *Config) (*Server, error) {
 		Templates: templates,
 	}
 
+	detailsCommitHandler := handler.DetailsCommit{
+		Base:      basePolicyHandler,
+		Sessions:  sessions,
+		Templates: templates,
+	}
+
 	details := goji.SubMux()
 	details.Use(handler.RequireLogin(sessions, basePath))
 	details.Handle(pat.Get("/:owner/:repo/:number"), hatpear.Try(&detailsHandler))
+	details.Handle(pat.Get("/:owner/:repo/commit/:sha"), hatpear.Try(&detailsCommitHandler))
 
 	if c.Options.ExpandRequiredReviewers {
 		details.Handle(pat.Get("/:owner/:repo/:number/reviewers"), hatpear.Try(&handler.DetailsReviewers{

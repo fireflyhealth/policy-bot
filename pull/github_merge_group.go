@@ -16,6 +16,8 @@ package pull
 
 import (
 	"context"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/go-github/v85/github"
@@ -23,6 +25,75 @@ import (
 	"github.com/pkg/errors"
 	"github.com/shurcooL/githubv4"
 )
+
+// MergeQueueRefPrefix is the prefix used by GitHub for the temporary branches
+// it creates for merge queue groups.
+const MergeQueueRefPrefix = "gh-readonly-queue/"
+
+// MergeQueueRef describes a GitHub merge queue ref parsed from its name.
+type MergeQueueRef struct {
+	// HeadBranch is the branch name without the "refs/heads/" prefix.
+	HeadBranch string
+	// BaseBranch is the branch into which the merge group will be merged.
+	BaseBranch string
+	// BaseSHA is the SHA of the base commit at the time the merge group was
+	// created.
+	BaseSHA string
+	// PRNumber is the pull request number associated with the merge group.
+	PRNumber int
+}
+
+// ParseMergeQueueRef parses a GitHub merge queue ref and returns its
+// components. ref may be a full ref like "refs/heads/gh-readonly-queue/..."
+// or just the branch name. The returned bool is false if ref is not a
+// recognized merge queue ref.
+//
+// The expected format is:
+//
+//	[refs/heads/]gh-readonly-queue/<base_branch>/pr-<pr_number>-<base_sha>
+//
+// where base_branch may itself contain slashes.
+func ParseMergeQueueRef(ref string) (MergeQueueRef, bool) {
+	name := strings.TrimPrefix(ref, "refs/heads/")
+	if !strings.HasPrefix(name, MergeQueueRefPrefix) {
+		return MergeQueueRef{}, false
+	}
+
+	rest := name[len(MergeQueueRefPrefix):]
+	slash := strings.LastIndex(rest, "/")
+	if slash <= 0 {
+		return MergeQueueRef{}, false
+	}
+
+	baseBranch := rest[:slash]
+	trailing := rest[slash+1:]
+
+	const prMarker = "pr-"
+	if !strings.HasPrefix(trailing, prMarker) {
+		return MergeQueueRef{}, false
+	}
+	inner := trailing[len(prMarker):]
+	dash := strings.Index(inner, "-")
+	if dash <= 0 {
+		return MergeQueueRef{}, false
+	}
+
+	prNumber, err := strconv.Atoi(inner[:dash])
+	if err != nil {
+		return MergeQueueRef{}, false
+	}
+	baseSHA := inner[dash+1:]
+	if baseSHA == "" {
+		return MergeQueueRef{}, false
+	}
+
+	return MergeQueueRef{
+		HeadBranch: name,
+		BaseBranch: baseBranch,
+		BaseSHA:    baseSHA,
+		PRNumber:   prNumber,
+	}, true
+}
 
 // GitHubMergeGroupContext is a commit.Context implementation that gets
 // information from GitHub for the head commit of a merge group. A new
