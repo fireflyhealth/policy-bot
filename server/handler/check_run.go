@@ -81,8 +81,14 @@ func (h *CheckRun) Handle(ctx context.Context, eventType, deliveryID string, pay
 			logger.Error().Err(err).Msgf("Failed to evaluate pull request '%d' for SHA '%s'", pr.GetNumber(), commitSHA)
 		}
 	}
+
+	if err := h.EvaluateMergeGroupCommit(ctx, installationID, repo, commitSHA, common.TriggerStatus); err != nil {
+		evaluationFailures++
+		logger.Error().Err(err).Msgf("Failed to evaluate merge group for SHA '%s'", commitSHA)
+	}
+
 	if evaluationFailures == 0 {
 		return nil
 	}
-	return errors.Errorf("failed to evaluate %d pull requests", evaluationFailures)
+	return errors.Errorf("failed to evaluate %d pull requests or merge groups", evaluationFailures)
 }

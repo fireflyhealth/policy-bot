@@ -146,8 +146,14 @@ func (h *Status) processOthers(ctx context.Context, event github.StatusEvent) er
 			}
 		}
 	}
+
+	if err := h.EvaluateMergeGroupCommit(ctx, installationID, repo, commitSHA, common.TriggerStatus); err != nil {
+		evaluationFailures++
+		logger.Error().Err(err).Msgf("Failed to evaluate merge group for SHA '%s'", commitSHA)
+	}
+
 	if evaluationFailures == 0 {
 		return nil
 	}
-	return errors.Errorf("failed to evaluate %d pull requests", evaluationFailures)
+	return errors.Errorf("failed to evaluate %d pull requests or merge groups", evaluationFailures)
 }
