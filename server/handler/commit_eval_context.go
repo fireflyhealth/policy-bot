@@ -17,6 +17,7 @@ package handler
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/google/go-github/v85/github"
 	"github.com/palantir/policy-bot/commit"
@@ -161,11 +162,7 @@ func (ec *CommitEvalContext) EvaluatePolicy(ctx context.Context, evaluator commo
 }
 
 // PostStatus posts a status for the evaluated commit. Unlike the pull request
-// version, there is no IsOpen check (merge groups have no equivalent state)
-// and no PR-number-based details URL.
-//
-// TODO: include a TargetURL pointing at a SHA-based details endpoint once
-// that endpoint exists.
+// version, there is no IsOpen check (merge groups have no equivalent state).
 func (ec *CommitEvalContext) PostStatus(ctx context.Context, state, message string) {
 	logger := zerolog.Ctx(ctx)
 
@@ -174,10 +171,14 @@ func (ec *CommitEvalContext) PostStatus(ctx context.Context, state, message stri
 	sha := ec.CommitContext.HeadSHA()
 	base, _ := ec.CommitContext.Branches()
 
+	publicURL := strings.TrimSuffix(ec.PublicURL, "/")
+	detailsURL := fmt.Sprintf("%s/details/%s/%s/commit/%s", publicURL, owner, repo, sha)
+
 	status := github.RepoStatus{
 		State:       &state,
 		Context:     new(fmt.Sprintf("%s: %s", ec.Options.StatusCheckContext, base)),
 		Description: &message,
+		TargetURL:   &detailsURL,
 	}
 
 	if ec.SkipPostStatus {
