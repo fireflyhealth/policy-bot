@@ -20,8 +20,11 @@ import (
 	"github.com/palantir/policy-bot/pull"
 )
 
-type Evaluator interface {
+// PullRequestEvaluator evaluates a policy against a pull.Context. It is
+// implemented by evaluators that require pull request data (for example,
+// reviews, comments, labels, or approval candidates).
+type PullRequestEvaluator interface {
 	Triggered
 
-	Evaluate(ctx context.Context, prctx pull.Context) Result
+	EvaluatePullRequest(ctx context.Context, prctx pull.Context) Result
 }

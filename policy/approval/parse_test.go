@@ -99,7 +99,7 @@ func TestParsePolicy(t *testing.T) {
 
 	expected := &evaluator{
 		root: &AndRequirement{
-			requirements: []common.Evaluator{
+			requirements: []common.PullRequestEvaluator{
 				&RuleRequirement{
 					rule: rules[0],
 				},
@@ -107,9 +107,9 @@ func TestParsePolicy(t *testing.T) {
 					rule: rules[1],
 				},
 				&OrRequirement{
-					requirements: []common.Evaluator{
+					requirements: []common.PullRequestEvaluator{
 						&AndRequirement{
-							requirements: []common.Evaluator{
+							requirements: []common.PullRequestEvaluator{
 								&RuleRequirement{
 									rule: rules[2],
 								},
@@ -124,7 +124,7 @@ func TestParsePolicy(t *testing.T) {
 					},
 				},
 				&AndRequirement{
-					requirements: []common.Evaluator{
+					requirements: []common.PullRequestEvaluator{
 						&RuleRequirement{
 							rule: rules[5],
 						},
@@ -132,7 +132,7 @@ func TestParsePolicy(t *testing.T) {
 							rule: rules[6],
 						},
 						&OrRequirement{
-							requirements: []common.Evaluator{
+							requirements: []common.PullRequestEvaluator{
 								&RuleRequirement{
 									rule: rules[7],
 								},
@@ -253,7 +253,7 @@ func TestParsePolicyError_recursiveDepth(t *testing.T) {
 	require.Error(t, err)
 }
 
-func loadAndParsePolicy(t *testing.T, policyText string, ruleText string) (common.Evaluator, error) {
+func loadAndParsePolicy(t *testing.T, policyText string, ruleText string) (common.PullRequestEvaluator, error) {
 	var policy Policy
 	err := yaml.UnmarshalStrict([]byte(policyText), &policy)
 	require.NoError(t, err, "failed to unmarshal policy")

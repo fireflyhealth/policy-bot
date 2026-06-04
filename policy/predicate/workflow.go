@@ -37,9 +37,9 @@ func NewHasWorkflowResult(workflows []string, conclusions []string) *HasWorkflow
 	}
 }
 
-var _ Predicate = HasWorkflowResult{}
+var _ PullRequestPredicate = HasWorkflowResult{}
 
-func (pred HasWorkflowResult) Evaluate(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
+func (pred HasWorkflowResult) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
 	workflowRuns, err := prctx.LatestWorkflowRuns()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list latest workflow runs")

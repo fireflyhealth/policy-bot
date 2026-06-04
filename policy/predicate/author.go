@@ -28,9 +28,9 @@ type HasAuthorIn struct {
 	common.Actors `yaml:",inline"`
 }
 
-var _ Predicate = &HasAuthorIn{}
+var _ PullRequestPredicate = &HasAuthorIn{}
 
-func (pred *HasAuthorIn) Evaluate(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
+func (pred *HasAuthorIn) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
 	author := prctx.Author()
 
 	result, err := pred.IsActor(ctx, prctx, author)
@@ -62,9 +62,9 @@ type OnlyHasContributorsIn struct {
 	common.Actors `yaml:",inline"`
 }
 
-var _ Predicate = &OnlyHasContributorsIn{}
+var _ PullRequestPredicate = &OnlyHasContributorsIn{}
 
-func (pred *OnlyHasContributorsIn) Evaluate(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
+func (pred *OnlyHasContributorsIn) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
 	commits, err := prctx.Commits()
 
 	predicateResult := common.PredicateResult{
@@ -121,9 +121,9 @@ type HasContributorIn struct {
 	common.Actors `yaml:",inline"`
 }
 
-var _ Predicate = &HasContributorIn{}
+var _ PullRequestPredicate = &HasContributorIn{}
 
-func (pred *HasContributorIn) Evaluate(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
+func (pred *HasContributorIn) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
 	commits, err := prctx.Commits()
 
 	predicateResult := common.PredicateResult{
@@ -178,9 +178,9 @@ func (pred *HasContributorIn) Trigger() common.Trigger {
 
 type AuthorIsOnlyContributor bool
 
-var _ Predicate = AuthorIsOnlyContributor(false)
+var _ PullRequestPredicate = AuthorIsOnlyContributor(false)
 
-func (pred AuthorIsOnlyContributor) Evaluate(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
+func (pred AuthorIsOnlyContributor) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
 	commits, err := prctx.Commits()
 
 	predicateResult := common.PredicateResult{

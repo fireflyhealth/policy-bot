@@ -78,7 +78,7 @@ func TestIsDisapproved(t *testing.T) {
 	}
 
 	assertDisapproved := func(t *testing.T, p *Policy, expected string) {
-		res := p.Evaluate(ctx, prctx)
+		res := p.EvaluatePullRequest(ctx, prctx)
 
 		require.NoError(t, res.Error)
 
@@ -88,7 +88,7 @@ func TestIsDisapproved(t *testing.T) {
 	}
 
 	assertSkipped := func(t *testing.T, p *Policy, expected string) {
-		res := p.Evaluate(ctx, prctx)
+		res := p.EvaluatePullRequest(ctx, prctx)
 
 		require.NoError(t, res.Error)
 

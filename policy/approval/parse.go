@@ -23,7 +23,7 @@ import (
 
 type Policy []any
 
-func (p Policy) Parse(rules map[string]*Rule) (common.Evaluator, error) {
+func (p Policy) Parse(rules map[string]*Rule) (common.PullRequestEvaluator, error) {
 	eval := &evaluator{}
 
 	if len(p) == 0 {
@@ -44,7 +44,7 @@ func (p Policy) Parse(rules map[string]*Rule) (common.Evaluator, error) {
 	return eval, nil
 }
 
-func parsePolicyR(policy any, rules map[string]*Rule, depth int) (common.Evaluator, error) {
+func parsePolicyR(policy any, rules map[string]*Rule, depth int) (common.PullRequestEvaluator, error) {
 	if depth > 10 {
 		return nil, errors.New("reached maximum recursive depth while processing policy")
 	}
@@ -83,7 +83,7 @@ func parsePolicyR(policy any, rules map[string]*Rule, depth int) (common.Evaluat
 			return nil, errors.Errorf("empty list of subconditions is not allowed")
 		}
 
-		var subrequirements []common.Evaluator
+		var subrequirements []common.PullRequestEvaluator
 		for _, subpolicy := range values {
 			subreq, err := parsePolicyR(subpolicy, rules, depth+1)
 			if err != nil {

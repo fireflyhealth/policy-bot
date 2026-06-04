@@ -581,12 +581,12 @@ type AuthorTestCase struct {
 	ExpectedPredicateResult *common.PredicateResult
 }
 
-func runAuthorTests(t *testing.T, p Predicate, cases []AuthorTestCase) {
+func runAuthorTests(t *testing.T, p PullRequestPredicate, cases []AuthorTestCase) {
 	ctx := context.Background()
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			predicateResult, err := p.Evaluate(ctx, tc.Context)
+			predicateResult, err := p.EvaluatePullRequest(ctx, tc.Context)
 			if assert.NoError(t, err, "evaluation failed") {
 				assertPredicateResult(t, tc.ExpectedPredicateResult, predicateResult)
 			}

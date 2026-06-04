@@ -26,9 +26,9 @@ type Repository struct {
 	NotMatches []common.Regexp `yaml:"not_matches,omitempty"`
 }
 
-var _ Predicate = Repository{}
+var _ PullRequestPredicate = Repository{}
 
-func (pred Repository) Evaluate(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
+func (pred Repository) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
 	owner := prctx.RepositoryOwner()
 	repo := prctx.RepositoryName()
 	repoFullName := owner + "/" + repo

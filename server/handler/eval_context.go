@@ -69,9 +69,9 @@ func (ec *EvalContext) Evaluate(ctx context.Context, trigger common.Trigger) err
 }
 
 // ParseConfig checks and validates the configuration in the EvalContext and
-// returns a non-nil Evaluator if the policy exists, is valid, and requires
-// evaluation for the trigger.
-func (ec *EvalContext) ParseConfig(ctx context.Context, trigger common.Trigger) (common.Evaluator, error) {
+// returns a non-nil PullRequestEvaluator if the policy exists, is valid, and
+// requires evaluation for the trigger.
+func (ec *EvalContext) ParseConfig(ctx context.Context, trigger common.Trigger) (common.PullRequestEvaluator, error) {
 	logger := zerolog.Ctx(ctx)
 
 	fc := ec.Config
@@ -128,10 +128,10 @@ func (ec *EvalContext) ParseConfig(ctx context.Context, trigger common.Trigger) 
 // EvaluatePolicy evaluates the policy for a PR and generates a result. The
 // evaluator must be non-nil, meaning callers should check the output of
 // ParseConfig before calling this method.
-func (ec *EvalContext) EvaluatePolicy(ctx context.Context, evaluator common.Evaluator) (common.Result, error) {
+func (ec *EvalContext) EvaluatePolicy(ctx context.Context, evaluator common.PullRequestEvaluator) (common.Result, error) {
 	logger := zerolog.Ctx(ctx)
 
-	result := evaluator.Evaluate(ctx, ec.PullContext)
+	result := evaluator.EvaluatePullRequest(ctx, ec.PullContext)
 	if result.Error != nil {
 		msg := fmt.Sprintf("Error evaluating policy in %s: %s", ec.Config.Source, ec.Config.Path)
 		logger.Warn().Err(result.Error).Msg(msg)

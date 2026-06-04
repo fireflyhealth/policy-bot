@@ -39,9 +39,9 @@ func NewHasStatus(statuses []string, conclusions []string) *HasStatus {
 	}
 }
 
-var _ Predicate = HasStatus{}
+var _ PullRequestPredicate = HasStatus{}
 
-func (pred HasStatus) Evaluate(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
+func (pred HasStatus) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
 	statuses, err := prctx.LatestStatuses()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list commit statuses")
@@ -99,12 +99,12 @@ func (pred HasStatus) Trigger() common.Trigger {
 // instead.
 type HasSuccessfulStatus []string
 
-var _ Predicate = HasSuccessfulStatus{}
+var _ PullRequestPredicate = HasSuccessfulStatus{}
 
-func (pred HasSuccessfulStatus) Evaluate(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
+func (pred HasSuccessfulStatus) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
 	return HasStatus{
 		Statuses: pred,
-	}.Evaluate(ctx, prctx)
+	}.EvaluatePullRequest(ctx, prctx)
 }
 
 func (pred HasSuccessfulStatus) Trigger() common.Trigger {

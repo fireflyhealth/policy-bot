@@ -26,9 +26,9 @@ type Title struct {
 	NotMatches []common.Regexp `yaml:"not_matches,omitempty"`
 }
 
-var _ Predicate = Title{}
+var _ PullRequestPredicate = Title{}
 
-func (pred Title) Evaluate(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
+func (pred Title) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
 	title := prctx.Title()
 
 	predicateResult := common.PredicateResult{

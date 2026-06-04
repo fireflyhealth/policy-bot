@@ -44,9 +44,9 @@ type ChangedFiles struct {
 	IgnoreGlobs []common.Glob   `yaml:"ignore_globs,omitempty"`
 }
 
-var _ Predicate = &ChangedFiles{}
+var _ PullRequestPredicate = &ChangedFiles{}
 
-func (pred *ChangedFiles) Evaluate(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
+func (pred *ChangedFiles) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
 	paths := getPathStrings(pred.Paths, pred.Globs)
 	ignorePaths := getPathStrings(pred.IgnorePaths, pred.IgnoreGlobs)
 
@@ -97,9 +97,9 @@ type OnlyChangedFiles struct {
 	Globs []common.Glob   `yaml:"globs,omitempty"`
 }
 
-var _ Predicate = &OnlyChangedFiles{}
+var _ PullRequestPredicate = &OnlyChangedFiles{}
 
-func (pred *OnlyChangedFiles) Evaluate(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
+func (pred *OnlyChangedFiles) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
 	paths := getPathStrings(pred.Paths, pred.Globs)
 
 	predicateResult := common.PredicateResult{
@@ -152,9 +152,9 @@ type NoChangedFiles struct {
 	IgnoreGlobs []common.Glob   `yaml:"ignore_globs,omitempty"`
 }
 
-var _ Predicate = &NoChangedFiles{}
+var _ PullRequestPredicate = &NoChangedFiles{}
 
-func (pred *NoChangedFiles) Evaluate(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
+func (pred *NoChangedFiles) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
 	changedFiles := ChangedFiles{
 		Paths:       pred.Paths,
 		Globs:       pred.Globs,
@@ -162,7 +162,7 @@ func (pred *NoChangedFiles) Evaluate(ctx context.Context, prctx pull.Context) (*
 		IgnoreGlobs: pred.IgnoreGlobs,
 	}
 
-	changedFilesPredicateResult, err := changedFiles.Evaluate(ctx, prctx)
+	changedFilesPredicateResult, err := changedFiles.EvaluatePullRequest(ctx, prctx)
 	if err != nil {
 		return nil, err
 	}
@@ -194,9 +194,9 @@ type FileAdded struct {
 	Globs []common.Glob   `yaml:"globs,omitempty"`
 }
 
-var _ Predicate = &FileAdded{}
+var _ PullRequestPredicate = &FileAdded{}
 
-func (pred *FileAdded) Evaluate(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
+func (pred *FileAdded) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
 	paths := getPathStrings(pred.Paths, pred.Globs)
 	predicateResult := common.PredicateResult{
 		Satisfied:       false,
@@ -239,9 +239,9 @@ type FileNotAdded struct {
 	Globs []common.Glob   `yaml:"globs,omitempty"`
 }
 
-var _ Predicate = &FileNotAdded{}
+var _ PullRequestPredicate = &FileNotAdded{}
 
-func (pred *FileNotAdded) Evaluate(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
+func (pred *FileNotAdded) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
 	paths := getPathStrings(pred.Paths, pred.Globs)
 
 	predicateResult := common.PredicateResult{
@@ -286,9 +286,9 @@ type FileDeleted struct {
 	Globs []common.Glob   `yaml:"globs,omitempty"`
 }
 
-var _ Predicate = &FileDeleted{}
+var _ PullRequestPredicate = &FileDeleted{}
 
-func (pred *FileDeleted) Evaluate(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
+func (pred *FileDeleted) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
 	paths := getPathStrings(pred.Paths, pred.Globs)
 
 	predicateResult := common.PredicateResult{
@@ -332,9 +332,9 @@ type FileNotDeleted struct {
 	Globs []common.Glob   `yaml:"globs,omitempty"`
 }
 
-var _ Predicate = &FileNotDeleted{}
+var _ PullRequestPredicate = &FileNotDeleted{}
 
-func (pred *FileNotDeleted) Evaluate(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
+func (pred *FileNotDeleted) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
 	paths := getPathStrings(pred.Paths, pred.Globs)
 	predicateResult := common.PredicateResult{
 		Satisfied:         true,
@@ -492,7 +492,7 @@ func (exp *ComparisonExpr) UnmarshalText(text []byte) error {
 	return nil
 }
 
-func (pred *ModifiedLines) Evaluate(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
+func (pred *ModifiedLines) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
 	files, err := prctx.ChangedFiles()
 
 	predicateResult := common.PredicateResult{
@@ -575,4 +575,4 @@ func (pred *ModifiedLines) Trigger() common.Trigger {
 	return common.TriggerCommit
 }
 
-var _ Predicate = &ModifiedLines{}
+var _ PullRequestPredicate = &ModifiedLines{}
