@@ -18,18 +18,18 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/palantir/policy-bot/commit"
 	"github.com/palantir/policy-bot/policy/common"
-	"github.com/palantir/policy-bot/pull"
 )
 
 type TargetsBranch struct {
 	Pattern common.Regexp `yaml:"pattern,omitempty"`
 }
 
-var _ PullRequestPredicate = &TargetsBranch{}
+var _ CommitPredicate = &TargetsBranch{}
 
-func (pred *TargetsBranch) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
-	targetName, _ := prctx.Branches()
+func (pred *TargetsBranch) EvaluateCommit(ctx context.Context, cctx commit.Context) (*common.PredicateResult, error) {
+	targetName, _ := cctx.Branches()
 	matches := pred.Pattern.Matches(targetName)
 
 	desc := ""
@@ -57,10 +57,10 @@ type FromBranch struct {
 	Pattern common.Regexp `yaml:"pattern,omitempty"`
 }
 
-var _ PullRequestPredicate = &FromBranch{}
+var _ CommitPredicate = &FromBranch{}
 
-func (pred *FromBranch) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
-	_, sourceBranchName := prctx.Branches()
+func (pred *FromBranch) EvaluateCommit(ctx context.Context, cctx commit.Context) (*common.PredicateResult, error) {
+	_, sourceBranchName := cctx.Branches()
 	matches := pred.Pattern.Matches(sourceBranchName)
 
 	desc := ""

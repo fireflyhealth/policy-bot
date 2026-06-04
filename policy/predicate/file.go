@@ -22,7 +22,6 @@ import (
 
 	"github.com/palantir/policy-bot/commit"
 	"github.com/palantir/policy-bot/policy/common"
-	"github.com/palantir/policy-bot/pull"
 	"github.com/pkg/errors"
 )
 
@@ -44,9 +43,9 @@ type ChangedFiles struct {
 	IgnoreGlobs []common.Glob   `yaml:"ignore_globs,omitempty"`
 }
 
-var _ PullRequestPredicate = &ChangedFiles{}
+var _ CommitPredicate = &ChangedFiles{}
 
-func (pred *ChangedFiles) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
+func (pred *ChangedFiles) EvaluateCommit(ctx context.Context, cctx commit.Context) (*common.PredicateResult, error) {
 	paths := getPathStrings(pred.Paths, pred.Globs)
 	ignorePaths := getPathStrings(pred.IgnorePaths, pred.IgnoreGlobs)
 
@@ -59,7 +58,7 @@ func (pred *ChangedFiles) EvaluatePullRequest(ctx context.Context, prctx pull.Co
 		},
 	}
 
-	files, err := prctx.ChangedFiles()
+	files, err := cctx.ChangedFiles()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list changed files")
 	}
@@ -97,9 +96,9 @@ type OnlyChangedFiles struct {
 	Globs []common.Glob   `yaml:"globs,omitempty"`
 }
 
-var _ PullRequestPredicate = &OnlyChangedFiles{}
+var _ CommitPredicate = &OnlyChangedFiles{}
 
-func (pred *OnlyChangedFiles) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
+func (pred *OnlyChangedFiles) EvaluateCommit(ctx context.Context, cctx commit.Context) (*common.PredicateResult, error) {
 	paths := getPathStrings(pred.Paths, pred.Globs)
 
 	predicateResult := common.PredicateResult{
@@ -108,7 +107,7 @@ func (pred *OnlyChangedFiles) EvaluatePullRequest(ctx context.Context, prctx pul
 		ConditionValues: paths,
 	}
 
-	files, err := prctx.ChangedFiles()
+	files, err := cctx.ChangedFiles()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list changed files")
 	}
@@ -152,9 +151,9 @@ type NoChangedFiles struct {
 	IgnoreGlobs []common.Glob   `yaml:"ignore_globs,omitempty"`
 }
 
-var _ PullRequestPredicate = &NoChangedFiles{}
+var _ CommitPredicate = &NoChangedFiles{}
 
-func (pred *NoChangedFiles) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
+func (pred *NoChangedFiles) EvaluateCommit(ctx context.Context, cctx commit.Context) (*common.PredicateResult, error) {
 	changedFiles := ChangedFiles{
 		Paths:       pred.Paths,
 		Globs:       pred.Globs,
@@ -162,7 +161,7 @@ func (pred *NoChangedFiles) EvaluatePullRequest(ctx context.Context, prctx pull.
 		IgnoreGlobs: pred.IgnoreGlobs,
 	}
 
-	changedFilesPredicateResult, err := changedFiles.EvaluatePullRequest(ctx, prctx)
+	changedFilesPredicateResult, err := changedFiles.EvaluateCommit(ctx, cctx)
 	if err != nil {
 		return nil, err
 	}
@@ -194,9 +193,9 @@ type FileAdded struct {
 	Globs []common.Glob   `yaml:"globs,omitempty"`
 }
 
-var _ PullRequestPredicate = &FileAdded{}
+var _ CommitPredicate = &FileAdded{}
 
-func (pred *FileAdded) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
+func (pred *FileAdded) EvaluateCommit(ctx context.Context, cctx commit.Context) (*common.PredicateResult, error) {
 	paths := getPathStrings(pred.Paths, pred.Globs)
 	predicateResult := common.PredicateResult{
 		Satisfied:       false,
@@ -206,7 +205,7 @@ func (pred *FileAdded) EvaluatePullRequest(ctx context.Context, prctx pull.Conte
 		ConditionValues: paths,
 	}
 
-	changedFiles, err := prctx.ChangedFiles()
+	changedFiles, err := cctx.ChangedFiles()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list changed files")
 	}
@@ -239,9 +238,9 @@ type FileNotAdded struct {
 	Globs []common.Glob   `yaml:"globs,omitempty"`
 }
 
-var _ PullRequestPredicate = &FileNotAdded{}
+var _ CommitPredicate = &FileNotAdded{}
 
-func (pred *FileNotAdded) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
+func (pred *FileNotAdded) EvaluateCommit(ctx context.Context, cctx commit.Context) (*common.PredicateResult, error) {
 	paths := getPathStrings(pred.Paths, pred.Globs)
 
 	predicateResult := common.PredicateResult{
@@ -253,7 +252,7 @@ func (pred *FileNotAdded) EvaluatePullRequest(ctx context.Context, prctx pull.Co
 		ReverseSkipPhrase: true,
 	}
 
-	changedFiles, err := prctx.ChangedFiles()
+	changedFiles, err := cctx.ChangedFiles()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list changed files")
 	}
@@ -286,9 +285,9 @@ type FileDeleted struct {
 	Globs []common.Glob   `yaml:"globs,omitempty"`
 }
 
-var _ PullRequestPredicate = &FileDeleted{}
+var _ CommitPredicate = &FileDeleted{}
 
-func (pred *FileDeleted) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
+func (pred *FileDeleted) EvaluateCommit(ctx context.Context, cctx commit.Context) (*common.PredicateResult, error) {
 	paths := getPathStrings(pred.Paths, pred.Globs)
 
 	predicateResult := common.PredicateResult{
@@ -299,7 +298,7 @@ func (pred *FileDeleted) EvaluatePullRequest(ctx context.Context, prctx pull.Con
 		ConditionValues: paths,
 	}
 
-	changedFiles, err := prctx.ChangedFiles()
+	changedFiles, err := cctx.ChangedFiles()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list changed files")
 	}
@@ -332,9 +331,9 @@ type FileNotDeleted struct {
 	Globs []common.Glob   `yaml:"globs,omitempty"`
 }
 
-var _ PullRequestPredicate = &FileNotDeleted{}
+var _ CommitPredicate = &FileNotDeleted{}
 
-func (pred *FileNotDeleted) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
+func (pred *FileNotDeleted) EvaluateCommit(ctx context.Context, cctx commit.Context) (*common.PredicateResult, error) {
 	paths := getPathStrings(pred.Paths, pred.Globs)
 	predicateResult := common.PredicateResult{
 		Satisfied:         true,
@@ -345,7 +344,7 @@ func (pred *FileNotDeleted) EvaluatePullRequest(ctx context.Context, prctx pull.
 		ReverseSkipPhrase: true,
 	}
 
-	changedFiles, err := prctx.ChangedFiles()
+	changedFiles, err := cctx.ChangedFiles()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list changed files")
 	}
@@ -492,8 +491,8 @@ func (exp *ComparisonExpr) UnmarshalText(text []byte) error {
 	return nil
 }
 
-func (pred *ModifiedLines) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
-	files, err := prctx.ChangedFiles()
+func (pred *ModifiedLines) EvaluateCommit(ctx context.Context, cctx commit.Context) (*common.PredicateResult, error) {
+	files, err := cctx.ChangedFiles()
 
 	predicateResult := common.PredicateResult{
 		ValuePhrase:     "file modifications",
@@ -575,4 +574,4 @@ func (pred *ModifiedLines) Trigger() common.Trigger {
 	return common.TriggerCommit
 }
 
-var _ PullRequestPredicate = &ModifiedLines{}
+var _ CommitPredicate = &ModifiedLines{}

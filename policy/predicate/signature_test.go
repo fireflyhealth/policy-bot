@@ -353,12 +353,12 @@ type SignatureTestCase struct {
 	ExpectedPredicateResult *common.PredicateResult
 }
 
-func runSignatureTests(t *testing.T, p PullRequestPredicate, cases []SignatureTestCase) {
+func runSignatureTests(t *testing.T, p CommitPredicate, cases []SignatureTestCase) {
 	ctx := context.Background()
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			predicateResult, err := p.EvaluatePullRequest(ctx, tc.Context)
+			predicateResult, err := p.EvaluateCommit(ctx, tc.Context)
 			if assert.NoError(t, err, "evaluation failed") {
 				assertPredicateResult(t, tc.ExpectedPredicateResult, predicateResult)
 			}

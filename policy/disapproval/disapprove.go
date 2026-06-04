@@ -128,7 +128,7 @@ func (p *Policy) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (r
 	var predicateResults []*common.PredicateResult
 
 	for _, p := range p.Predicates.Predicates() {
-		result, err := p.EvaluatePullRequest(ctx, prctx)
+		result, err := predicate.EvaluatePullRequest(ctx, p, prctx)
 		if err != nil {
 			res.Error = errors.Wrap(err, "failed to evaluate predicate")
 			return

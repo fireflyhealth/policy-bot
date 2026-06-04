@@ -20,8 +20,8 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/palantir/policy-bot/commit"
 	"github.com/palantir/policy-bot/policy/common"
-	"github.com/palantir/policy-bot/pull"
 	"github.com/pkg/errors"
 )
 
@@ -39,10 +39,10 @@ func NewHasStatus(statuses []string, conclusions []string) *HasStatus {
 	}
 }
 
-var _ PullRequestPredicate = HasStatus{}
+var _ CommitPredicate = HasStatus{}
 
-func (pred HasStatus) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
-	statuses, err := prctx.LatestStatuses()
+func (pred HasStatus) EvaluateCommit(ctx context.Context, cctx commit.Context) (*common.PredicateResult, error) {
+	statuses, err := cctx.LatestStatuses()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list commit statuses")
 	}
@@ -99,12 +99,12 @@ func (pred HasStatus) Trigger() common.Trigger {
 // instead.
 type HasSuccessfulStatus []string
 
-var _ PullRequestPredicate = HasSuccessfulStatus{}
+var _ CommitPredicate = HasSuccessfulStatus{}
 
-func (pred HasSuccessfulStatus) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
+func (pred HasSuccessfulStatus) EvaluateCommit(ctx context.Context, cctx commit.Context) (*common.PredicateResult, error) {
 	return HasStatus{
 		Statuses: pred,
-	}.EvaluatePullRequest(ctx, prctx)
+	}.EvaluateCommit(ctx, cctx)
 }
 
 func (pred HasSuccessfulStatus) Trigger() common.Trigger {
