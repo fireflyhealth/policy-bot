@@ -100,3 +100,54 @@ func (b *Base) Evaluate(ctx context.Context, installationID int64, trigger commo
 	}
 	return evalCtx.Evaluate(ctx, trigger)
 }
+
+// EvaluateMergeGroupCommit checks whether sha is the head of a merge queue
+// branch in repo and, if so, evaluates the policy for that commit. It is a
+// no-op when the commit is not associated with a merge group. Callers should
+// invoke this from event handlers that observe commit-level changes (e.g.
+// status, check_run) so merge group evaluations stay current.
+func (b *Base) EvaluateMergeGroupCommit(ctx context.Context, installationID int64, repo *github.Repository, sha string, trigger common.Trigger) error {
+	client, err := b.NewInstallationClient(installationID)
+	if err != nil {
+		return err
+	}
+
+	owner := repo.GetOwner().GetLogin()
+	repoName := repo.GetName()
+
+	mqRef, err := findMergeQueueRef(ctx, client, owner, repoName, sha)
+	if err != nil {
+		return errors.Wrap(err, "failed to look up branches for commit")
+	}
+	if mqRef == nil {
+		return nil
+	}
+
+	v4client, err := b.NewInstallationV4Client(installationID)
+	if err != nil {
+		return err
+	}
+
+	mbrCtx := NewCrossOrgMembershipContext(ctx, client, owner, b.Installations, b.ClientCreator)
+	cctx := pull.NewGitHubMergeGroupContext(
+		ctx, mbrCtx, b.GlobalCache, client, v4client,
+		owner, repoName, repo.GetID(),
+		mqRef.BaseSHA, sha,
+		mqRef.BaseBranch, mqRef.HeadBranch,
+	)
+
+	fetchedConfig := b.ConfigFetcher.ConfigForRepositoryBranch(ctx, client, owner, repoName, mqRef.BaseBranch)
+
+	evalCtx := &CommitEvalContext{
+		Client:   client,
+		V4Client: v4client,
+
+		Options:   b.PullOpts,
+		PublicURL: b.BaseConfig.PublicURL,
+
+		CommitContext: cctx,
+		Config:        fetchedConfig,
+	}
+
+	return evalCtx.Evaluate(ctx, trigger)
+}
