@@ -44,6 +44,7 @@ func TestCommitEvalContextParseConfigPostsStatusForSeenPolicy(t *testing.T) {
 	assert.Equal(t, "error", ec.Status.GetState())
 	assert.Equal(t, "policy-bot: main", ec.Status.GetContext())
 	assert.Equal(t, "Error loading policy from testorg/testrepo@main", ec.Status.GetDescription())
+	assert.Equal(t, "https://policy-bot.example.com/details/testorg/testrepo/commit/abc123", ec.Status.GetTargetURL())
 }
 
 func makeCommitEvalContext(seenPolicy bool) *CommitEvalContext {
