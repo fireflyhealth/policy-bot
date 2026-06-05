@@ -21,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/palantir/policy-bot/commit"
 	"github.com/palantir/policy-bot/policy/common"
 	"github.com/palantir/policy-bot/policy/predicate"
 	"github.com/palantir/policy-bot/pull"
@@ -72,7 +73,12 @@ func (r *Rule) Trigger() common.Trigger {
 	return t
 }
 
-func (r *Rule) Evaluate(ctx context.Context, prctx pull.Context) (res common.Result) {
+// EvaluateCommit evaluates the rule against a commit.Context, with no pull
+// request data available. It supports only the commit-scoped subset of the
+// rule: rules that require approvals (Requires.Count > 0) or that reference
+// any PullRequestPredicate produce a hard error so the policy author can
+// adjust the policy for merge group evaluation.
+func (r *Rule) EvaluateCommit(ctx context.Context, cctx commit.Context) (res common.Result) {
 	log := zerolog.Ctx(ctx)
 
 	res.Name = r.Name
@@ -83,7 +89,77 @@ func (r *Rule) Evaluate(ctx context.Context, prctx pull.Context) (res common.Res
 	var predicateResults []*common.PredicateResult
 
 	for _, p := range r.Predicates.Predicates() {
-		result, err := p.Evaluate(ctx, prctx)
+		result, err := predicate.EvaluateCommit(ctx, p, cctx)
+		if err != nil {
+			res.Error = errors.Wrap(err, "failed to evaluate predicate")
+			return
+		}
+		predicateResults = append(predicateResults, result)
+
+		if !result.Satisfied {
+			log.Debug().Msgf("skipping rule, predicate of type %T was not satisfied", p)
+
+			desc := result.Description
+			res.StatusDescription = desc
+			if desc == "" {
+				res.StatusDescription = "A precondition of this rule was not satisfied"
+			}
+			res.PredicateResults = []*common.PredicateResult{result}
+			return
+		}
+	}
+	res.PredicateResults = predicateResults
+
+	if r.Requires.Count > 0 {
+		res.Error = errors.Errorf("rule %q requires %d approvals and cannot be evaluated for a merge group", r.Name, r.Requires.Count)
+		return
+	}
+
+	conditions := r.Requires.Conditions.Predicates()
+	var conditionResults []*common.PredicateResult
+	approved := 0
+	for _, c := range conditions {
+		result, err := predicate.EvaluateCommit(ctx, c, cctx)
+		if err != nil {
+			res.Error = errors.Wrap(err, "failed to evaluate condition")
+			return
+		}
+		if result.Satisfied {
+			approved++
+		}
+		conditionResults = append(conditionResults, result)
+	}
+
+	res.Requires = common.RequiresResult{
+		Conditions: conditionResults,
+	}
+
+	if approved == len(conditions) {
+		res.Status = common.StatusApproved
+		if len(conditions) == 0 {
+			res.StatusDescription = "No approval required"
+		} else {
+			res.StatusDescription = "Required conditions satisfied"
+		}
+	} else {
+		res.Status = common.StatusPending
+		res.StatusDescription = fmt.Sprintf("%d/%d required conditions", approved, len(conditions))
+	}
+	return
+}
+
+func (r *Rule) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (res common.Result) {
+	log := zerolog.Ctx(ctx)
+
+	res.Name = r.Name
+	res.Description = r.Description
+	res.Status = common.StatusSkipped
+	res.Methods = r.Options.GetMethods()
+
+	var predicateResults []*common.PredicateResult
+
+	for _, p := range r.Predicates.Predicates() {
+		result, err := predicate.EvaluatePullRequest(ctx, p, prctx)
 		if err != nil {
 			res.Error = errors.Wrap(err, "failed to evaluate predicate")
 			return
@@ -251,7 +327,7 @@ func (r *Rule) isApprovedByConditions(ctx context.Context, prctx pull.Context) (
 	var approved int
 
 	for _, c := range conditions {
-		result, err := c.Evaluate(ctx, prctx)
+		result, err := predicate.EvaluatePullRequest(ctx, c, prctx)
 		if err != nil {
 			return false, nil, errors.Wrap(err, "failed to evaluate condition")
 		}
@@ -367,7 +443,7 @@ func (r *Rule) filterInvalidCandidates(ctx context.Context, prctx pull.Context, 
 
 // filteredCommits returns the relevant commits for the evaluation ordered in
 // history order, from most to least recent.
-func (r *Rule) filteredCommits(ctx context.Context, prctx pull.Context) ([]*pull.Commit, error) {
+func (r *Rule) filteredCommits(ctx context.Context, prctx pull.Context) ([]*commit.Commit, error) {
 	commits, err := prctx.Commits()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list commits")
@@ -382,7 +458,7 @@ func (r *Rule) filteredCommits(ctx context.Context, prctx pull.Context) ([]*pull
 		return commits, nil
 	}
 
-	var filtered []*pull.Commit
+	var filtered []*commit.Commit
 	for _, c := range commits {
 		if ignoreUpdates {
 			if isUpdateMerge(commits, c) {
@@ -456,7 +532,7 @@ func statusDescription(approved bool, result common.RequiresResult, candidates [
 	return desc.String()
 }
 
-func isUpdateMerge(commits []*pull.Commit, c *pull.Commit) bool {
+func isUpdateMerge(commits []*commit.Commit, c *commit.Commit) bool {
 	// must be a simple merge commit (exactly 2 parents)
 	if len(c.Parents) != 2 {
 		return false
@@ -477,7 +553,7 @@ func isUpdateMerge(commits []*pull.Commit, c *pull.Commit) bool {
 	return shas[c.Parents[0]] && !shas[c.Parents[1]]
 }
 
-func isIgnoredCommit(ctx context.Context, prctx pull.Context, actors *common.Actors, c *pull.Commit) (bool, error) {
+func isIgnoredCommit(ctx context.Context, prctx pull.Context, actors *common.Actors, c *commit.Commit) (bool, error) {
 	for _, u := range c.Users() {
 		ignored, err := actors.IsActor(ctx, prctx, u)
 		if err != nil {
@@ -500,13 +576,13 @@ func numberOfApprovals(count int) string {
 
 // sortCommits orders commits in history order starting from head. It must be
 // called on the unfiltered set of commits.
-func sortCommits(commits []*pull.Commit, head string) []*pull.Commit {
-	commitsBySHA := make(map[string]*pull.Commit)
+func sortCommits(commits []*commit.Commit, head string) []*commit.Commit {
+	commitsBySHA := make(map[string]*commit.Commit)
 	for _, c := range commits {
 		commitsBySHA[c.SHA] = c
 	}
 
-	ordered := make([]*pull.Commit, 0, len(commits))
+	ordered := make([]*commit.Commit, 0, len(commits))
 	for {
 		c, ok := commitsBySHA[head]
 		if !ok {

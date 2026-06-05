@@ -21,6 +21,7 @@ import (
 	"slices"
 	"sort"
 
+	"github.com/palantir/policy-bot/commit"
 	"github.com/palantir/policy-bot/policy/common"
 	"github.com/palantir/policy-bot/pull"
 	"github.com/pkg/errors"
@@ -149,7 +150,7 @@ func selectOrgMembers(prctx pull.Context, allOrgs []string) ([]string, error) {
 	return allOrgsMembers, nil
 }
 
-func getPossibleReviewers(prctx pull.Context, users map[string]struct{}, collaborators []*pull.Collaborator) []string {
+func getPossibleReviewers(prctx pull.Context, users map[string]struct{}, collaborators []*commit.Collaborator) []string {
 	var possibleReviewers []string
 	for _, c := range collaborators {
 		_, exists := users[c.Name]
@@ -242,7 +243,7 @@ func selectUserReviewers(ctx context.Context, prctx pull.Context, selection *Sel
 		}
 	}
 
-	minPerm := pull.PermissionNone
+	minPerm := commit.PermissionNone
 	if len(result.ReviewRequestRule.Permissions) > 0 {
 		minPerm = slices.Min(result.ReviewRequestRule.Permissions)
 	}
@@ -287,6 +288,6 @@ func requestsTeam(r *common.Result, team string) bool {
 	return slices.Contains(r.ReviewRequestRule.Teams, team)
 }
 
-func requestsPermission(r *common.Result, perm pull.Permission) bool {
+func requestsPermission(r *common.Result, perm commit.Permission) bool {
 	return slices.Contains(r.ReviewRequestRule.Permissions, perm)
 }

@@ -135,7 +135,7 @@ func (h *Simulate) getSimulatedResult(ctx context.Context, installation githubap
 		return nil, errors.Wrap(err, "failed to get policy evaluator")
 	}
 
-	result := evaluator.Evaluate(ctx, simulatedCtx)
+	result := evaluator.EvaluatePullRequest(ctx, simulatedCtx)
 	return &result, nil
 }
 
@@ -151,7 +151,7 @@ func (h *Simulate) newSimulatedContext(ctx context.Context, installationID int64
 	}
 
 	mbrCtx := NewCrossOrgMembershipContext(ctx, client, loc.Owner, h.Installations, h.ClientCreator)
-	prctx, err := pull.NewGitHubContext(ctx, mbrCtx, h.GlobalCache, client, v4client, loc)
+	prctx, err := pull.NewGitHubPullRequestContext(ctx, mbrCtx, h.GlobalCache, client, v4client, loc)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -21,8 +21,8 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/palantir/policy-bot/commit"
 	"github.com/palantir/policy-bot/policy/common"
-	"github.com/palantir/policy-bot/pull"
 	"github.com/pkg/errors"
 )
 
@@ -31,12 +31,12 @@ type CustomPropertyIsNotNull []string
 type CustomPropertyMatchesAnyOf map[string][]common.Regexp
 type CustomPropertyMatchesNoneOf map[string][]common.Regexp
 
-var _ Predicate = (CustomPropertyIsNull)(nil)
-var _ Predicate = (CustomPropertyIsNotNull)(nil)
-var _ Predicate = (CustomPropertyMatchesAnyOf)(nil)
-var _ Predicate = (CustomPropertyMatchesNoneOf)(nil)
+var _ CommitPredicate = (CustomPropertyIsNull)(nil)
+var _ CommitPredicate = (CustomPropertyIsNotNull)(nil)
+var _ CommitPredicate = (CustomPropertyMatchesAnyOf)(nil)
+var _ CommitPredicate = (CustomPropertyMatchesNoneOf)(nil)
 
-func formatCustomProperties(customProperties map[string]pull.CustomProperty) []string {
+func formatCustomProperties(customProperties map[string]commit.CustomProperty) []string {
 	result := []string{}
 	keys := slices.Sorted(maps.Keys(customProperties))
 	for _, k := range keys {
@@ -53,8 +53,8 @@ func formatCustomProperties(customProperties map[string]pull.CustomProperty) []s
 	return result
 }
 
-func (pred CustomPropertyIsNotNull) Evaluate(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
-	customProperties, err := prctx.RepositoryCustomProperties()
+func (pred CustomPropertyIsNotNull) EvaluateCommit(ctx context.Context, cctx commit.Context) (*common.PredicateResult, error) {
+	customProperties, err := cctx.RepositoryCustomProperties()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get repository custom properties")
 	}
@@ -78,8 +78,8 @@ func (pred CustomPropertyIsNotNull) Evaluate(ctx context.Context, prctx pull.Con
 	return &predicateResult, nil
 }
 
-func (pred CustomPropertyIsNull) Evaluate(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
-	customProperties, err := prctx.RepositoryCustomProperties()
+func (pred CustomPropertyIsNull) EvaluateCommit(ctx context.Context, cctx commit.Context) (*common.PredicateResult, error) {
+	customProperties, err := cctx.RepositoryCustomProperties()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get repository custom properties")
 	}
@@ -104,8 +104,8 @@ func (pred CustomPropertyIsNull) Evaluate(ctx context.Context, prctx pull.Contex
 	return &predicateResult, nil
 }
 
-func (pred CustomPropertyMatchesAnyOf) Evaluate(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
-	customProperties, err := prctx.RepositoryCustomProperties()
+func (pred CustomPropertyMatchesAnyOf) EvaluateCommit(ctx context.Context, cctx commit.Context) (*common.PredicateResult, error) {
+	customProperties, err := cctx.RepositoryCustomProperties()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get repository custom properties")
 	}
@@ -143,8 +143,8 @@ func (pred CustomPropertyMatchesAnyOf) Evaluate(ctx context.Context, prctx pull.
 	return &predicateResult, nil
 }
 
-func (pred CustomPropertyMatchesNoneOf) Evaluate(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
-	customProperties, err := prctx.RepositoryCustomProperties()
+func (pred CustomPropertyMatchesNoneOf) EvaluateCommit(ctx context.Context, cctx commit.Context) (*common.PredicateResult, error) {
+	customProperties, err := cctx.RepositoryCustomProperties()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get repository custom properties")
 	}

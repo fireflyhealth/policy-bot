@@ -19,9 +19,9 @@ import (
 	"slices"
 
 	"github.com/google/go-github/v85/github"
+	"github.com/palantir/policy-bot/commit"
 	"github.com/palantir/policy-bot/policy"
 	"github.com/palantir/policy-bot/policy/approval"
-	"github.com/palantir/policy-bot/pull"
 	"github.com/pkg/errors"
 )
 
@@ -141,7 +141,7 @@ func (h *DetailsReviewers) renderReviewers(w http.ResponseWriter, r *http.Reques
 	return tmpl.Execute(w, data)
 }
 
-func userHasReviewerPermission(user *pull.Collaborator, perms []pull.Permission) bool {
+func userHasReviewerPermission(user *commit.Collaborator, perms []commit.Permission) bool {
 	for _, p := range user.Permissions {
 		if p.ViaRepo && slices.Contains(perms, p.Permission) {
 			return true

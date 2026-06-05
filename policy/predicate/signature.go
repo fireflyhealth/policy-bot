@@ -19,17 +19,17 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/palantir/policy-bot/commit"
 	"github.com/palantir/policy-bot/policy/common"
-	"github.com/palantir/policy-bot/pull"
 	"github.com/pkg/errors"
 )
 
 type HasValidSignatures bool
 
-var _ Predicate = HasValidSignatures(false)
+var _ CommitPredicate = HasValidSignatures(false)
 
-func (pred HasValidSignatures) Evaluate(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
-	commits, err := prctx.Commits()
+func (pred HasValidSignatures) EvaluateCommit(ctx context.Context, cctx commit.Context) (*common.PredicateResult, error) {
+	commits, err := cctx.Commits()
 
 	predicateResult := common.PredicateResult{
 		ConditionPhrase: "have",
@@ -74,10 +74,10 @@ type HasValidSignaturesBy struct {
 	common.Actors `yaml:",inline,omitempty"`
 }
 
-var _ Predicate = &HasValidSignaturesBy{}
+var _ CommitPredicate = &HasValidSignaturesBy{}
 
-func (pred *HasValidSignaturesBy) Evaluate(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
-	commits, err := prctx.Commits()
+func (pred *HasValidSignaturesBy) EvaluateCommit(ctx context.Context, cctx commit.Context) (*common.PredicateResult, error) {
+	commits, err := cctx.Commits()
 
 	predicateResult := common.PredicateResult{
 		ConditionsMap: map[string][]string{
@@ -112,7 +112,7 @@ func (pred *HasValidSignaturesBy) Evaluate(ctx context.Context, prctx pull.Conte
 
 	for signer := range signers {
 		signerList = append(signerList, signer)
-		member, err := pred.IsActor(ctx, prctx, signer)
+		member, err := pred.IsActor(ctx, cctx, signer)
 		if err != nil {
 			return nil, err
 		}
@@ -140,10 +140,10 @@ type HasValidSignaturesByKeys struct {
 	KeyIDs []string `yaml:"key_ids,omitempty"`
 }
 
-var _ Predicate = &HasValidSignaturesByKeys{}
+var _ CommitPredicate = &HasValidSignaturesByKeys{}
 
-func (pred *HasValidSignaturesByKeys) Evaluate(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
-	commits, err := prctx.Commits()
+func (pred *HasValidSignaturesByKeys) EvaluateCommit(ctx context.Context, cctx commit.Context) (*common.PredicateResult, error) {
+	commits, err := cctx.Commits()
 
 	predicateResult := common.PredicateResult{
 		ConditionPhrase: "have valid signatures by keys",
@@ -170,7 +170,7 @@ func (pred *HasValidSignaturesByKeys) Evaluate(ctx context.Context, prctx pull.C
 		commitHashes = append(commitHashes, c.SHA)
 		// Only GPG signatures are valid for this predicate
 		switch c.Signature.Type {
-		case pull.SignatureGpg:
+		case commit.SignatureGpg:
 			commitSHAs, ok := keys[c.Signature.KeyID]
 			if ok {
 				keys[c.Signature.KeyID] = append(commitSHAs, c.SHA)
@@ -209,13 +209,13 @@ func (pred *HasValidSignaturesByKeys) Trigger() common.Trigger {
 	return common.TriggerCommit
 }
 
-func hasValidSignature(ctx context.Context, commit *pull.Commit) (bool, string) {
-	if commit.Signature == nil {
-		return false, fmt.Sprintf("Commit %.10s has no signature", commit.SHA)
+func hasValidSignature(ctx context.Context, c *commit.Commit) (bool, string) {
+	if c.Signature == nil {
+		return false, fmt.Sprintf("Commit %.10s has no signature", c.SHA)
 	}
-	if !commit.Signature.IsValid {
-		reason := commit.Signature.State
-		return false, fmt.Sprintf("Commit %.10s has an invalid signature due to %s", commit.SHA, reason)
+	if !c.Signature.IsValid {
+		reason := c.Signature.State
+		return false, fmt.Sprintf("Commit %.10s has an invalid signature due to %s", c.SHA, reason)
 	}
 	return true, ""
 }

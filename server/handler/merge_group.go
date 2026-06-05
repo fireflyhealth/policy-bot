@@ -17,13 +17,13 @@ package handler
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"strings"
 
 	"github.com/google/go-github/v85/github"
 	"github.com/palantir/go-githubapp/githubapp"
+	"github.com/palantir/policy-bot/policy/common"
+	"github.com/palantir/policy-bot/pull"
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog"
 )
 
 type MergeGroup struct {
@@ -34,9 +34,8 @@ func (h *MergeGroup) Handles() []string { return []string{"merge_group"} }
 
 // Handle merge_group
 // https://docs.github.com/webhooks-and-events/webhooks/webhook-events-and-payloads#merge_group
-func (h *MergeGroup) Handle(ctx context.Context, eventType, devlieryID string, payload []byte) error {
+func (h *MergeGroup) Handle(ctx context.Context, eventType, deliveryID string, payload []byte) error {
 	var event github.MergeGroupEvent
-
 	if err := json.Unmarshal(payload, &event); err != nil {
 		return errors.Wrap(err, "failed to parse merge group event payload")
 	}
@@ -45,45 +44,50 @@ func (h *MergeGroup) Handle(ctx context.Context, eventType, devlieryID string, p
 		return nil
 	}
 
-	logger := zerolog.Ctx(ctx)
+	mg := event.GetMergeGroup()
+	headSHA := mg.GetHeadSHA()
+
 	installationID := githubapp.GetInstallationIDFromEvent(&event)
+	ctx, logger := githubapp.PrepareRepoContext(ctx, installationID, event.GetRepo())
+	logger = logger.With().Str(LogKeyGitHubSHA, headSHA).Logger()
+	ctx = logger.WithContext(ctx)
+
 	client, err := h.NewInstallationClient(installationID)
 	if err != nil {
 		return err
 	}
-
-	repository := event.GetRepo().GetName()
-	owner := event.GetRepo().GetOwner().GetLogin()
-	mergeGroup := event.GetMergeGroup()
-	baseBranch := strings.TrimPrefix(mergeGroup.GetBaseRef(), "refs/heads/")
-	headSHA := mergeGroup.GetHeadSHA()
-
-	// If a PR is added to the merge queue, presumably the policy existed and was valid at the time of merge,
-	// so we're just checking for the existance of a policy here and don't care about its validity.
-	fetchedConfig := h.ConfigFetcher.ConfigForRepositoryBranch(ctx, client, owner, repository, baseBranch)
-	if fetchedConfig.Config == nil {
-		return nil
+	v4client, err := h.NewInstallationV4Client(installationID)
+	if err != nil {
+		return err
 	}
 
-	contextWithBranch := fmt.Sprintf("%s: %s", h.PullOpts.StatusCheckContext, baseBranch)
-	state := "success"
-	message := fmt.Sprintf("%s previously approved original pull request.", h.AppName)
-	status := github.RepoStatus{
-		Context:     &contextWithBranch,
-		State:       &state,
-		Description: &message,
+	repo := event.GetRepo()
+	owner := repo.GetOwner().GetLogin()
+	repoName := repo.GetName()
+	repoID := repo.GetID()
+	baseBranch := strings.TrimPrefix(mg.GetBaseRef(), "refs/heads/")
+	headBranch := strings.TrimPrefix(mg.GetHeadRef(), "refs/heads/")
+
+	mbrCtx := NewCrossOrgMembershipContext(ctx, client, owner, h.Installations, h.ClientCreator)
+	cctx := pull.NewGitHubMergeGroupContext(
+		ctx, mbrCtx, h.GlobalCache, client, v4client,
+		owner, repoName, repoID,
+		mg.GetBaseSHA(), headSHA,
+		baseBranch, headBranch,
+	)
+
+	fetchedConfig := h.ConfigFetcher.ConfigForRepositoryBranch(ctx, client, owner, repoName, baseBranch)
+
+	evalCtx := &CommitEvalContext{
+		Client:   client,
+		V4Client: v4client,
+
+		Options:   h.PullOpts,
+		PublicURL: h.BaseConfig.PublicURL,
+
+		CommitContext: cctx,
+		Config:        fetchedConfig,
 	}
 
-	if err := PostStatus(ctx, client, owner, repository, headSHA, status); err != nil {
-		logger.Err(errors.WithStack(err)).Msg("Failed to post status check for merge group")
-	}
-
-	if h.PullOpts.PostInsecureStatusChecks {
-		status.Context = new(h.PullOpts.StatusCheckContext)
-		if err := PostStatus(ctx, client, owner, repository, headSHA, status); err != nil {
-			logger.Err(err).Msg("Failed to post insecure repo status")
-		}
-	}
-
-	return nil
+	return evalCtx.Evaluate(ctx, common.TriggerCommit)
 }

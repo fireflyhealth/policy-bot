@@ -21,6 +21,7 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/palantir/policy-bot/commit"
 	"github.com/palantir/policy-bot/policy/common"
 	"github.com/palantir/policy-bot/policy/predicate"
 	"github.com/palantir/policy-bot/pull"
@@ -129,14 +130,45 @@ func (m *mockRequirement) Trigger() common.Trigger {
 	return common.TriggerStatic
 }
 
-func (m *mockRequirement) Evaluate(ctx context.Context, prctx pull.Context) common.Result {
+func (m *mockRequirement) EvaluatePullRequest(ctx context.Context, prctx pull.Context) common.Result {
 	return *m.result
 }
 
-func makeRulesResultingIn(es ...common.EvaluationStatus) []common.Evaluator {
-	var requirements []common.Evaluator
+// mockCommitRequirement implements both common.PullRequestEvaluator and
+// common.CommitEvaluator so it can be slotted into Or/And requirements for
+// commit-only tests.
+type mockCommitRequirement struct {
+	result *common.Result
+}
+
+func (m *mockCommitRequirement) Trigger() common.Trigger {
+	return common.TriggerStatic
+}
+
+func (m *mockCommitRequirement) EvaluatePullRequest(ctx context.Context, prctx pull.Context) common.Result {
+	return *m.result
+}
+
+func (m *mockCommitRequirement) EvaluateCommit(ctx context.Context, cctx commit.Context) common.Result {
+	return *m.result
+}
+
+func makeRulesResultingIn(es ...common.EvaluationStatus) []common.PullRequestEvaluator {
+	var requirements []common.PullRequestEvaluator
 	for _, e := range es {
 		requirements = append(requirements, &mockRequirement{
+			result: &common.Result{
+				Status: e,
+			},
+		})
+	}
+	return requirements
+}
+
+func makeCommitRulesResultingIn(es ...common.EvaluationStatus) []common.PullRequestEvaluator {
+	var requirements []common.PullRequestEvaluator
+	for _, e := range es {
+		requirements = append(requirements, &mockCommitRequirement{
 			result: &common.Result{
 				Status: e,
 			},
@@ -153,7 +185,7 @@ func TestAndRequirement(t *testing.T) {
 	and := &AndRequirement{
 		requirements: makeRulesResultingIn(common.StatusApproved, common.StatusPending),
 	}
-	result := and.Evaluate(ctx, prctx)
+	result := and.EvaluatePullRequest(ctx, prctx)
 	assert.NoError(t, result.Error)
 	assert.Equal(t, common.StatusPending, result.Status)
 
@@ -161,7 +193,7 @@ func TestAndRequirement(t *testing.T) {
 	and = &AndRequirement{
 		requirements: makeRulesResultingIn(common.StatusApproved),
 	}
-	result = and.Evaluate(ctx, prctx)
+	result = and.EvaluatePullRequest(ctx, prctx)
 	assert.NoError(t, result.Error)
 	assert.Equal(t, common.StatusApproved, result.Status)
 
@@ -169,7 +201,7 @@ func TestAndRequirement(t *testing.T) {
 	and = &AndRequirement{
 		requirements: makeRulesResultingIn(common.StatusApproved, common.StatusSkipped),
 	}
-	result = and.Evaluate(ctx, prctx)
+	result = and.EvaluatePullRequest(ctx, prctx)
 	assert.NoError(t, result.Error)
 	assert.Equal(t, common.StatusApproved, result.Status)
 
@@ -177,13 +209,13 @@ func TestAndRequirement(t *testing.T) {
 	and = &AndRequirement{
 		requirements: makeRulesResultingIn(common.StatusSkipped),
 	}
-	result = and.Evaluate(ctx, prctx)
+	result = and.EvaluatePullRequest(ctx, prctx)
 	assert.NoError(t, result.Error)
 	assert.Equal(t, common.StatusSkipped, result.Status)
 
 	// Error blocks approval
 	and = &AndRequirement{
-		requirements: []common.Evaluator{
+		requirements: []common.PullRequestEvaluator{
 			&mockRequirement{
 				result: &common.Result{
 					Status: common.StatusApproved,
@@ -196,7 +228,7 @@ func TestAndRequirement(t *testing.T) {
 			},
 		},
 	}
-	result = and.Evaluate(ctx, prctx)
+	result = and.EvaluatePullRequest(ctx, prctx)
 	assert.Error(t, result.Error)
 }
 
@@ -208,7 +240,7 @@ func TestOrRequirement(t *testing.T) {
 	or := &OrRequirement{
 		requirements: makeRulesResultingIn(common.StatusPending, common.StatusSkipped, common.StatusApproved),
 	}
-	result := or.Evaluate(ctx, prctx)
+	result := or.EvaluatePullRequest(ctx, prctx)
 	assert.NoError(t, result.Error)
 	assert.Equal(t, common.StatusApproved, result.Status)
 
@@ -216,7 +248,7 @@ func TestOrRequirement(t *testing.T) {
 	or = &OrRequirement{
 		requirements: makeRulesResultingIn(common.StatusApproved),
 	}
-	result = or.Evaluate(ctx, prctx)
+	result = or.EvaluatePullRequest(ctx, prctx)
 	assert.NoError(t, result.Error)
 	assert.Equal(t, common.StatusApproved, result.Status)
 
@@ -224,7 +256,7 @@ func TestOrRequirement(t *testing.T) {
 	or = &OrRequirement{
 		requirements: makeRulesResultingIn(common.StatusApproved, common.StatusSkipped),
 	}
-	result = or.Evaluate(ctx, prctx)
+	result = or.EvaluatePullRequest(ctx, prctx)
 	assert.NoError(t, result.Error)
 	assert.Equal(t, common.StatusApproved, result.Status)
 
@@ -232,13 +264,13 @@ func TestOrRequirement(t *testing.T) {
 	or = &OrRequirement{
 		requirements: makeRulesResultingIn(common.StatusSkipped),
 	}
-	result = or.Evaluate(ctx, prctx)
+	result = or.EvaluatePullRequest(ctx, prctx)
 	assert.NoError(t, result.Error)
 	assert.Equal(t, common.StatusSkipped, result.Status)
 
 	// Error does not block approval
 	or = &OrRequirement{
-		requirements: []common.Evaluator{
+		requirements: []common.PullRequestEvaluator{
 			&mockRequirement{
 				result: &common.Result{
 					Status: common.StatusApproved,
@@ -251,7 +283,75 @@ func TestOrRequirement(t *testing.T) {
 			},
 		},
 	}
-	result = or.Evaluate(ctx, prctx)
+	result = or.EvaluatePullRequest(ctx, prctx)
 	assert.NoError(t, result.Error)
 	assert.Equal(t, common.StatusApproved, result.Status)
+}
+
+func TestAndRequirementEvaluateCommit(t *testing.T) {
+	ctx := context.Background()
+	cctx := &pulltest.Context{}
+
+	t.Run("allApproved", func(t *testing.T) {
+		and := &AndRequirement{
+			requirements: makeCommitRulesResultingIn(common.StatusApproved, common.StatusApproved),
+		}
+		result := and.EvaluateCommit(ctx, cctx)
+		assert.NoError(t, result.Error)
+		assert.Equal(t, common.StatusApproved, result.Status)
+	})
+
+	t.Run("pendingDominates", func(t *testing.T) {
+		and := &AndRequirement{
+			requirements: makeCommitRulesResultingIn(common.StatusApproved, common.StatusPending),
+		}
+		result := and.EvaluateCommit(ctx, cctx)
+		assert.NoError(t, result.Error)
+		assert.Equal(t, common.StatusPending, result.Status)
+	})
+
+	t.Run("requirementWithoutCommitSupportErrors", func(t *testing.T) {
+		and := &AndRequirement{
+			requirements: []common.PullRequestEvaluator{
+				&mockRequirement{result: &common.Result{Status: common.StatusApproved}},
+			},
+		}
+		result := and.EvaluateCommit(ctx, cctx)
+		require.Error(t, result.Error)
+		assert.Contains(t, result.Error.Error(), "does not support commit-only evaluation")
+	})
+}
+
+func TestOrRequirementEvaluateCommit(t *testing.T) {
+	ctx := context.Background()
+	cctx := &pulltest.Context{}
+
+	t.Run("oneApprovedWins", func(t *testing.T) {
+		or := &OrRequirement{
+			requirements: makeCommitRulesResultingIn(common.StatusPending, common.StatusApproved),
+		}
+		result := or.EvaluateCommit(ctx, cctx)
+		assert.NoError(t, result.Error)
+		assert.Equal(t, common.StatusApproved, result.Status)
+	})
+
+	t.Run("allSkippedSkipped", func(t *testing.T) {
+		or := &OrRequirement{
+			requirements: makeCommitRulesResultingIn(common.StatusSkipped, common.StatusSkipped),
+		}
+		result := or.EvaluateCommit(ctx, cctx)
+		assert.NoError(t, result.Error)
+		assert.Equal(t, common.StatusSkipped, result.Status)
+	})
+
+	t.Run("requirementWithoutCommitSupportErrors", func(t *testing.T) {
+		or := &OrRequirement{
+			requirements: []common.PullRequestEvaluator{
+				&mockRequirement{result: &common.Result{Status: common.StatusApproved}},
+			},
+		}
+		result := or.EvaluateCommit(ctx, cctx)
+		require.Error(t, result.Error)
+		assert.Contains(t, result.Error.Error(), "does not support commit-only evaluation")
+	})
 }

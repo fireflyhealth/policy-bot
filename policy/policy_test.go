@@ -20,6 +20,7 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/palantir/policy-bot/commit"
 	"github.com/palantir/policy-bot/policy/approval"
 	"github.com/palantir/policy-bot/policy/common"
 	"github.com/palantir/policy-bot/policy/disapproval"
@@ -37,7 +38,23 @@ func (eval *StaticEvaluator) Trigger() common.Trigger {
 	return common.TriggerStatic
 }
 
-func (eval *StaticEvaluator) Evaluate(ctx context.Context, prctx pull.Context) common.Result {
+func (eval *StaticEvaluator) EvaluatePullRequest(ctx context.Context, prctx pull.Context) common.Result {
+	return common.Result(*eval)
+}
+
+// StaticCommitEvaluator also implements common.CommitEvaluator so it can be
+// used as the approval slot in evaluator for EvaluateCommit tests.
+type StaticCommitEvaluator common.Result
+
+func (eval *StaticCommitEvaluator) Trigger() common.Trigger {
+	return common.TriggerStatic
+}
+
+func (eval *StaticCommitEvaluator) EvaluatePullRequest(ctx context.Context, prctx pull.Context) common.Result {
+	return common.Result(*eval)
+}
+
+func (eval *StaticCommitEvaluator) EvaluateCommit(ctx context.Context, cctx commit.Context) common.Result {
 	return common.Result(*eval)
 }
 
@@ -384,7 +401,7 @@ func TestEvaluator(t *testing.T) {
 			},
 		}
 
-		r := eval.Evaluate(ctx, prctx)
+		r := eval.EvaluatePullRequest(ctx, prctx)
 		require.NoError(t, r.Error)
 
 		assert.Equal(t, common.StatusDisapproved, r.Status)
@@ -402,7 +419,7 @@ func TestEvaluator(t *testing.T) {
 			},
 		}
 
-		r := eval.Evaluate(ctx, prctx)
+		r := eval.EvaluatePullRequest(ctx, prctx)
 		require.NoError(t, r.Error)
 
 		assert.Equal(t, common.StatusPending, r.Status)
@@ -419,7 +436,7 @@ func TestEvaluator(t *testing.T) {
 			},
 		}
 
-		r := eval.Evaluate(ctx, prctx)
+		r := eval.EvaluatePullRequest(ctx, prctx)
 
 		assert.EqualError(t, r.Error, "approval failed")
 		assert.Equal(t, common.StatusSkipped, r.Status)
@@ -435,7 +452,7 @@ func TestEvaluator(t *testing.T) {
 			},
 		}
 
-		r := eval.Evaluate(ctx, prctx)
+		r := eval.EvaluatePullRequest(ctx, prctx)
 		require.NoError(t, r.Error)
 
 		assert.Equal(t, "policy", r.Name)
@@ -443,6 +460,63 @@ func TestEvaluator(t *testing.T) {
 			assert.Equal(t, castToResult(eval.approval), r.Children[0])
 			assert.Equal(t, castToResult(eval.disapproval), r.Children[1])
 		}
+	})
+}
+
+func TestEvaluatorEvaluateCommit(t *testing.T) {
+	ctx := context.Background()
+	cctx := &pulltest.Context{}
+
+	t.Run("skipsDisapproval", func(t *testing.T) {
+		eval := evaluator{
+			approval: &StaticCommitEvaluator{
+				Status:            common.StatusApproved,
+				StatusDescription: "approved by test",
+			},
+			disapproval: &StaticEvaluator{
+				Status:            common.StatusDisapproved,
+				StatusDescription: "disapproved by test",
+			},
+		}
+
+		r := eval.EvaluateCommit(ctx, cctx)
+		require.NoError(t, r.Error)
+
+		assert.Equal(t, common.StatusApproved, r.Status)
+		assert.Equal(t, "approved by test", r.StatusDescription)
+		assert.Equal(t, "policy", r.Name)
+		if assert.Len(t, r.Children, 1) {
+			assert.Equal(t, common.StatusApproved, r.Children[0].Status)
+		}
+	})
+
+	t.Run("propagatesApprovalError", func(t *testing.T) {
+		eval := evaluator{
+			approval: &StaticCommitEvaluator{
+				Error: errors.New("approval failed"),
+			},
+			disapproval: &StaticEvaluator{
+				Status: common.StatusDisapproved,
+			},
+		}
+
+		r := eval.EvaluateCommit(ctx, cctx)
+		assert.EqualError(t, r.Error, "approval failed")
+	})
+
+	t.Run("approvalWithoutCommitSupportErrors", func(t *testing.T) {
+		eval := evaluator{
+			approval: &StaticEvaluator{
+				Status: common.StatusApproved,
+			},
+			disapproval: &StaticEvaluator{
+				Status: common.StatusSkipped,
+			},
+		}
+
+		r := eval.EvaluateCommit(ctx, cctx)
+		require.Error(t, r.Error)
+		assert.Contains(t, r.Error.Error(), "does not support commit-only evaluation")
 	})
 }
 
@@ -571,6 +645,6 @@ func TestConfigMarshalYaml(t *testing.T) {
 	}
 }
 
-func castToResult(e common.Evaluator) *common.Result {
+func castToResult(e common.PullRequestEvaluator) *common.Result {
 	return (*common.Result)(e.(*StaticEvaluator))
 }

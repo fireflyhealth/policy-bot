@@ -18,6 +18,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/palantir/policy-bot/commit"
 	"github.com/palantir/policy-bot/policy/common"
 	"github.com/palantir/policy-bot/pull"
 	"github.com/palantir/policy-bot/pull/pulltest"
@@ -25,7 +26,7 @@ import (
 )
 
 var customPropertiesTestCtx = &pulltest.Context{
-	RepositoryCustomPropertiesValue: map[string]pull.CustomProperty{
+	RepositoryCustomPropertiesValue: map[string]commit.CustomProperty{
 		"custom1": {String: new("value1")},
 		"custom2": {String: new("value2")},
 		"custom3": {Array: []string{"a", "b", "c"}},
@@ -294,7 +295,7 @@ func TestCustomPropertiesMatchesNoneOf(t *testing.T) {
 
 type customPropertyTestCase struct {
 	description             string
-	predicate               Predicate
+	predicate               CommitPredicate
 	ExpectedPredicateResult *common.PredicateResult
 	ExpectedErr             func(error) bool
 }
@@ -319,7 +320,7 @@ func runCustomPropertyTestCase(t *testing.T, prctx pull.Context, cases []customP
 	ctx := context.Background()
 	for _, tc := range cases {
 		t.Run(tc.description, func(t *testing.T) {
-			predicateResult, err := tc.predicate.Evaluate(ctx, prctx)
+			predicateResult, err := tc.predicate.EvaluateCommit(ctx, prctx)
 			if tc.ExpectedErr != nil {
 				if !assert.Error(t, err, "expected error but got none") {
 					return

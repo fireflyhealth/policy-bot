@@ -1,0 +1,38 @@
+- status: 200
+  body: |
+    {
+      "data": {
+        "repository": {
+          "object": {
+            "history": {
+              "pageInfo": {
+                "endCursor": "1",
+                "hasNextPage": false
+              },
+              "nodes": [
+                {
+                  "oid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "author": {
+                    "user": {
+                      "login": "mhaypenny"
+                    }
+                  },
+                  "committer": {
+                    "user": {
+                      "login": "mhaypenny"
+                    }
+                  },
+                  "parents": {
+                    "nodes": [
+                      {
+                        "oid": "dddddddddddddddddddddddddddddddddddddddd"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    }

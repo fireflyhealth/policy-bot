@@ -16,14 +16,60 @@ package predicate
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/palantir/policy-bot/commit"
 	"github.com/palantir/policy-bot/policy/common"
 	"github.com/palantir/policy-bot/pull"
 )
 
-type Predicate interface {
+// CommitPredicate is a commit-scoped predicate. It is evaluated against a
+// commit.Context and does not require any pull request data.
+type CommitPredicate interface {
 	common.Triggered
 
-	// Evaluate determines if the predicate is satisfied.
-	Evaluate(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error)
+	// EvaluateCommit determines if the predicate is satisfied.
+	EvaluateCommit(ctx context.Context, cctx commit.Context) (*common.PredicateResult, error)
+}
+
+// PullRequestPredicate is a pull-request-scoped predicate. It requires data
+// that only exists in the context of a pull request (for example, the
+// author, title, body, comments, reviews, or labels) and is therefore
+// evaluated against a pull.Context.
+type PullRequestPredicate interface {
+	common.Triggered
+
+	// EvaluatePullRequest determines if the predicate is satisfied.
+	EvaluatePullRequest(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error)
+}
+
+// EvaluatePullRequest dispatches to the correct method based on the
+// underlying type of p. It is intended for use by callers that have a
+// pull.Context and want to evaluate any predicate without caring which
+// interface it implements.
+func EvaluatePullRequest(ctx context.Context, p common.Triggered, prctx pull.Context) (*common.PredicateResult, error) {
+	switch p := p.(type) {
+	case CommitPredicate:
+		return p.EvaluateCommit(ctx, prctx)
+	case PullRequestPredicate:
+		return p.EvaluatePullRequest(ctx, prctx)
+	default:
+		return nil, fmt.Errorf("unknown predicate type %T", p)
+	}
+}
+
+// EvaluateCommit dispatches to the correct method based on the underlying
+// type of p, using only a commit.Context. PullRequestPredicates cannot be
+// evaluated against a commit context and produce a hard error: callers that
+// reach this branch in a merge group context must surface the error so the
+// policy author can adjust the rule.
+func EvaluateCommit(ctx context.Context, p common.Triggered, cctx commit.Context) (*common.PredicateResult, error) {
+	switch p := p.(type) {
+	case CommitPredicate:
+		return p.EvaluateCommit(ctx, cctx)
+	case PullRequestPredicate:
+		return nil, fmt.Errorf("predicate %T requires pull request data and cannot be evaluated for a merge group", p)
+	default:
+		return nil, fmt.Errorf("unknown predicate type %T", p)
+	}
 }

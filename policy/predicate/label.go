@@ -26,9 +26,9 @@ import (
 
 type HasLabels []string
 
-var _ Predicate = HasLabels([]string{})
+var _ PullRequestPredicate = HasLabels([]string{})
 
-func (pred HasLabels) Evaluate(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
+func (pred HasLabels) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
 
 	predicateResult := common.PredicateResult{
 		ValuePhrase:     "labels",

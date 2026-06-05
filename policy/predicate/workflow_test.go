@@ -27,7 +27,7 @@ type WorkflowTestCase struct {
 	name                    string
 	latestWorkflowRunsValue map[string][]string
 	latestWorkflowRunsError error
-	predicate               Predicate
+	predicate               CommitPredicate
 	ExpectedPredicateResult *common.PredicateResult
 }
 
@@ -246,7 +246,7 @@ func runWorkflowTestCase(t *testing.T, cases []WorkflowTestCase) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			predicateResult, err := tc.predicate.Evaluate(ctx, &pulltest.Context{
+			predicateResult, err := tc.predicate.EvaluateCommit(ctx, &pulltest.Context{
 				LatestWorkflowRunsValue: tc.latestWorkflowRunsValue,
 				LatestStatusesError:     tc.latestWorkflowRunsError,
 			})

@@ -19,8 +19,8 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/palantir/policy-bot/commit"
 	"github.com/palantir/policy-bot/policy/common"
-	"github.com/palantir/policy-bot/pull"
 	"github.com/palantir/policy-bot/pull/pulltest"
 	"github.com/stretchr/testify/assert"
 )
@@ -39,7 +39,7 @@ func TestChangedFiles(t *testing.T) {
 	runFileTests(t, p, []FileTestCase{
 		{
 			"empty",
-			[]*pull.File{},
+			[]*commit.File{},
 			&common.PredicateResult{
 				Satisfied: false,
 				Values:    []string{},
@@ -51,14 +51,14 @@ func TestChangedFiles(t *testing.T) {
 		},
 		{
 			"onlyMatches",
-			[]*pull.File{
+			[]*commit.File{
 				{
 					Filename: "app/client.go",
-					Status:   pull.FileAdded,
+					Status:   commit.FileAdded,
 				},
 				{
 					Filename: "server/server.go",
-					Status:   pull.FileModified,
+					Status:   commit.FileModified,
 				},
 			},
 			&common.PredicateResult{
@@ -72,14 +72,14 @@ func TestChangedFiles(t *testing.T) {
 		},
 		{
 			"someMatches",
-			[]*pull.File{
+			[]*commit.File{
 				{
 					Filename: "app/client.go",
-					Status:   pull.FileAdded,
+					Status:   commit.FileAdded,
 				},
 				{
 					Filename: "model/user.go",
-					Status:   pull.FileModified,
+					Status:   commit.FileModified,
 				},
 			},
 			&common.PredicateResult{
@@ -93,14 +93,14 @@ func TestChangedFiles(t *testing.T) {
 		},
 		{
 			"noMatches",
-			[]*pull.File{
+			[]*commit.File{
 				{
 					Filename: "model/order.go",
-					Status:   pull.FileDeleted,
+					Status:   commit.FileDeleted,
 				},
 				{
 					Filename: "model/user.go",
-					Status:   pull.FileModified,
+					Status:   commit.FileModified,
 				},
 			},
 			&common.PredicateResult{
@@ -114,14 +114,14 @@ func TestChangedFiles(t *testing.T) {
 		},
 		{
 			"ignoreAll",
-			[]*pull.File{
+			[]*commit.File{
 				{
 					Filename: "app/special.go",
-					Status:   pull.FileDeleted,
+					Status:   commit.FileDeleted,
 				},
 				{
 					Filename: "server/special.go",
-					Status:   pull.FileModified,
+					Status:   commit.FileModified,
 				},
 			},
 			&common.PredicateResult{
@@ -135,14 +135,14 @@ func TestChangedFiles(t *testing.T) {
 		},
 		{
 			"ignoreSome",
-			[]*pull.File{
+			[]*commit.File{
 				{
 					Filename: "app/normal.go",
-					Status:   pull.FileDeleted,
+					Status:   commit.FileDeleted,
 				},
 				{
 					Filename: "server/special.go",
-					Status:   pull.FileModified,
+					Status:   commit.FileModified,
 				},
 			},
 			&common.PredicateResult{
@@ -171,7 +171,7 @@ func TestNoChangedFiles(t *testing.T) {
 	runFileTests(t, p, []FileTestCase{
 		{
 			"empty",
-			[]*pull.File{},
+			[]*commit.File{},
 			&common.PredicateResult{
 				Satisfied: true,
 				Values:    []string{},
@@ -183,14 +183,14 @@ func TestNoChangedFiles(t *testing.T) {
 		},
 		{
 			"onlyMatches",
-			[]*pull.File{
+			[]*commit.File{
 				{
 					Filename: "app/client.go",
-					Status:   pull.FileAdded,
+					Status:   commit.FileAdded,
 				},
 				{
 					Filename: "server/server.go",
-					Status:   pull.FileModified,
+					Status:   commit.FileModified,
 				},
 			},
 			&common.PredicateResult{
@@ -204,14 +204,14 @@ func TestNoChangedFiles(t *testing.T) {
 		},
 		{
 			"someMatches",
-			[]*pull.File{
+			[]*commit.File{
 				{
 					Filename: "app/client.go",
-					Status:   pull.FileAdded,
+					Status:   commit.FileAdded,
 				},
 				{
 					Filename: "model/user.go",
-					Status:   pull.FileModified,
+					Status:   commit.FileModified,
 				},
 			},
 			&common.PredicateResult{
@@ -225,14 +225,14 @@ func TestNoChangedFiles(t *testing.T) {
 		},
 		{
 			"noMatches",
-			[]*pull.File{
+			[]*commit.File{
 				{
 					Filename: "model/order.go",
-					Status:   pull.FileDeleted,
+					Status:   commit.FileDeleted,
 				},
 				{
 					Filename: "model/user.go",
-					Status:   pull.FileModified,
+					Status:   commit.FileModified,
 				},
 			},
 			&common.PredicateResult{
@@ -246,14 +246,14 @@ func TestNoChangedFiles(t *testing.T) {
 		},
 		{
 			"ignoreAll",
-			[]*pull.File{
+			[]*commit.File{
 				{
 					Filename: "app/special.go",
-					Status:   pull.FileDeleted,
+					Status:   commit.FileDeleted,
 				},
 				{
 					Filename: "server/special.go",
-					Status:   pull.FileModified,
+					Status:   commit.FileModified,
 				},
 			},
 			&common.PredicateResult{
@@ -267,14 +267,14 @@ func TestNoChangedFiles(t *testing.T) {
 		},
 		{
 			"ignoreSome",
-			[]*pull.File{
+			[]*commit.File{
 				{
 					Filename: "app/normal.go",
-					Status:   pull.FileDeleted,
+					Status:   commit.FileDeleted,
 				},
 				{
 					Filename: "server/special.go",
-					Status:   pull.FileModified,
+					Status:   commit.FileModified,
 				},
 			},
 			&common.PredicateResult{
@@ -300,7 +300,7 @@ func TestOnlyChangedFiles(t *testing.T) {
 	runFileTests(t, p, []FileTestCase{
 		{
 			"empty",
-			[]*pull.File{},
+			[]*commit.File{},
 			&common.PredicateResult{
 				Satisfied:       false,
 				Values:          []string{},
@@ -309,14 +309,14 @@ func TestOnlyChangedFiles(t *testing.T) {
 		},
 		{
 			"onlyMatches",
-			[]*pull.File{
+			[]*commit.File{
 				{
 					Filename: "app/client.go",
-					Status:   pull.FileAdded,
+					Status:   commit.FileAdded,
 				},
 				{
 					Filename: "server/server.go",
-					Status:   pull.FileModified,
+					Status:   commit.FileModified,
 				},
 			},
 			&common.PredicateResult{
@@ -327,14 +327,14 @@ func TestOnlyChangedFiles(t *testing.T) {
 		},
 		{
 			"someMatches",
-			[]*pull.File{
+			[]*commit.File{
 				{
 					Filename: "app/client.go",
-					Status:   pull.FileAdded,
+					Status:   commit.FileAdded,
 				},
 				{
 					Filename: "model/user.go",
-					Status:   pull.FileModified,
+					Status:   commit.FileModified,
 				},
 			},
 			&common.PredicateResult{
@@ -345,14 +345,14 @@ func TestOnlyChangedFiles(t *testing.T) {
 		},
 		{
 			"noMatches",
-			[]*pull.File{
+			[]*commit.File{
 				{
 					Filename: "model/order.go",
-					Status:   pull.FileDeleted,
+					Status:   commit.FileDeleted,
 				},
 				{
 					Filename: "model/user.go",
-					Status:   pull.FileModified,
+					Status:   commit.FileModified,
 				},
 			},
 			&common.PredicateResult{
@@ -375,7 +375,7 @@ func TestFileNotDeleted(t *testing.T) {
 	runFileTests(t, p, []FileTestCase{
 		{
 			"file not changed",
-			[]*pull.File{},
+			[]*commit.File{},
 			&common.PredicateResult{
 				Satisfied:       true,
 				Values:          []string{},
@@ -384,14 +384,14 @@ func TestFileNotDeleted(t *testing.T) {
 		},
 		{
 			"files exist and modified",
-			[]*pull.File{
+			[]*commit.File{
 				{
 					Filename: "workflows/workflow.yaml",
-					Status:   pull.FileModified,
+					Status:   commit.FileModified,
 				},
 				{
 					Filename: "actions/action.yaml",
-					Status:   pull.FileModified,
+					Status:   commit.FileModified,
 				},
 			},
 			&common.PredicateResult{
@@ -402,14 +402,14 @@ func TestFileNotDeleted(t *testing.T) {
 		},
 		{
 			"one file deleted",
-			[]*pull.File{
+			[]*commit.File{
 				{
 					Filename: "workflows/workflow.yaml",
-					Status:   pull.FileDeleted,
+					Status:   commit.FileDeleted,
 				},
 				{
 					Filename: "actions/action.yaml",
-					Status:   pull.FileModified,
+					Status:   commit.FileModified,
 				},
 			},
 			&common.PredicateResult{
@@ -420,14 +420,14 @@ func TestFileNotDeleted(t *testing.T) {
 		},
 		{
 			"multiple files deleted",
-			[]*pull.File{
+			[]*commit.File{
 				{
 					Filename: "workflows/workflow.yaml",
-					Status:   pull.FileDeleted,
+					Status:   commit.FileDeleted,
 				},
 				{
 					Filename: "actions/action.yaml",
-					Status:   pull.FileDeleted,
+					Status:   commit.FileDeleted,
 				},
 			},
 			&common.PredicateResult{
@@ -438,10 +438,10 @@ func TestFileNotDeleted(t *testing.T) {
 		},
 		{
 			"file deleted not matching",
-			[]*pull.File{
+			[]*commit.File{
 				{
 					Filename: "some/otherfile.yaml",
-					Status:   pull.FileDeleted,
+					Status:   commit.FileDeleted,
 				},
 			},
 			&common.PredicateResult{
@@ -464,7 +464,7 @@ func TestFileAdded(t *testing.T) {
 	runFileTests(t, p, []FileTestCase{
 		{
 			"no files",
-			[]*pull.File{},
+			[]*commit.File{},
 			&common.PredicateResult{
 				Satisfied:       false,
 				Values:          []string{},
@@ -473,14 +473,14 @@ func TestFileAdded(t *testing.T) {
 		},
 		{
 			"matching file added",
-			[]*pull.File{
+			[]*commit.File{
 				{
 					Filename: "app/client.go",
-					Status:   pull.FileAdded,
+					Status:   commit.FileAdded,
 				},
 				{
 					Filename: "other/file.go",
-					Status:   pull.FileAdded,
+					Status:   commit.FileAdded,
 				},
 			},
 			&common.PredicateResult{
@@ -491,14 +491,14 @@ func TestFileAdded(t *testing.T) {
 		},
 		{
 			"no matching files added",
-			[]*pull.File{
+			[]*commit.File{
 				{
 					Filename: "other/file1.go",
-					Status:   pull.FileAdded,
+					Status:   commit.FileAdded,
 				},
 				{
 					Filename: "other/file2.go",
-					Status:   pull.FileAdded,
+					Status:   commit.FileAdded,
 				},
 			},
 			&common.PredicateResult{
@@ -509,14 +509,14 @@ func TestFileAdded(t *testing.T) {
 		},
 		{
 			"files exist but modified",
-			[]*pull.File{
+			[]*commit.File{
 				{
 					Filename: "app/client.go",
-					Status:   pull.FileModified,
+					Status:   commit.FileModified,
 				},
 				{
 					Filename: "server/server.go",
-					Status:   pull.FileModified,
+					Status:   commit.FileModified,
 				},
 			},
 			&common.PredicateResult{
@@ -539,7 +539,7 @@ func TestFileDeleted(t *testing.T) {
 	runFileTests(t, p, []FileTestCase{
 		{
 			"no files",
-			[]*pull.File{},
+			[]*commit.File{},
 			&common.PredicateResult{
 				Satisfied:       false,
 				Values:          []string{},
@@ -548,14 +548,14 @@ func TestFileDeleted(t *testing.T) {
 		},
 		{
 			"matching file deleted",
-			[]*pull.File{
+			[]*commit.File{
 				{
 					Filename: "app/client.go",
-					Status:   pull.FileDeleted,
+					Status:   commit.FileDeleted,
 				},
 				{
 					Filename: "other/file.go",
-					Status:   pull.FileDeleted,
+					Status:   commit.FileDeleted,
 				},
 			},
 			&common.PredicateResult{
@@ -566,14 +566,14 @@ func TestFileDeleted(t *testing.T) {
 		},
 		{
 			"no matching files deleted",
-			[]*pull.File{
+			[]*commit.File{
 				{
 					Filename: "other/file1.go",
-					Status:   pull.FileDeleted,
+					Status:   commit.FileDeleted,
 				},
 				{
 					Filename: "other/file2.go",
-					Status:   pull.FileDeleted,
+					Status:   commit.FileDeleted,
 				},
 			},
 			&common.PredicateResult{
@@ -584,14 +584,14 @@ func TestFileDeleted(t *testing.T) {
 		},
 		{
 			"files exist but modified",
-			[]*pull.File{
+			[]*commit.File{
 				{
 					Filename: "app/client.go",
-					Status:   pull.FileModified,
+					Status:   commit.FileModified,
 				},
 				{
 					Filename: "server/server.go",
-					Status:   pull.FileModified,
+					Status:   commit.FileModified,
 				},
 			},
 			&common.PredicateResult{
@@ -614,7 +614,7 @@ func TestFileNotAdded(t *testing.T) {
 	runFileTests(t, p, []FileTestCase{
 		{
 			"file not changed",
-			[]*pull.File{},
+			[]*commit.File{},
 			&common.PredicateResult{
 				Satisfied:       true,
 				Values:          []string{},
@@ -623,14 +623,14 @@ func TestFileNotAdded(t *testing.T) {
 		},
 		{
 			"files exist and modified",
-			[]*pull.File{
+			[]*commit.File{
 				{
 					Filename: "workflows/workflow.yaml",
-					Status:   pull.FileModified,
+					Status:   commit.FileModified,
 				},
 				{
 					Filename: "actions/action.yaml",
-					Status:   pull.FileModified,
+					Status:   commit.FileModified,
 				},
 			},
 			&common.PredicateResult{
@@ -641,14 +641,14 @@ func TestFileNotAdded(t *testing.T) {
 		},
 		{
 			"one file added",
-			[]*pull.File{
+			[]*commit.File{
 				{
 					Filename: "workflows/workflow.yaml",
-					Status:   pull.FileAdded,
+					Status:   commit.FileAdded,
 				},
 				{
 					Filename: "actions/action.yaml",
-					Status:   pull.FileModified,
+					Status:   commit.FileModified,
 				},
 			},
 			&common.PredicateResult{
@@ -659,14 +659,14 @@ func TestFileNotAdded(t *testing.T) {
 		},
 		{
 			"multiple files added",
-			[]*pull.File{
+			[]*commit.File{
 				{
 					Filename: "workflows/workflow.yaml",
-					Status:   pull.FileAdded,
+					Status:   commit.FileAdded,
 				},
 				{
 					Filename: "actions/action.yaml",
-					Status:   pull.FileAdded,
+					Status:   commit.FileAdded,
 				},
 			},
 			&common.PredicateResult{
@@ -677,10 +677,10 @@ func TestFileNotAdded(t *testing.T) {
 		},
 		{
 			"file added not matching",
-			[]*pull.File{
+			[]*commit.File{
 				{
 					Filename: "some/otherfile.yaml",
-					Status:   pull.FileAdded,
+					Status:   commit.FileAdded,
 				},
 			},
 			&common.PredicateResult{
@@ -701,7 +701,7 @@ func TestModifiedLines(t *testing.T) {
 	runFileTests(t, p, []FileTestCase{
 		{
 			"empty",
-			[]*pull.File{},
+			[]*commit.File{},
 			&common.PredicateResult{
 				Satisfied: false,
 				Values:    []string{"+0", "-0"},
@@ -712,7 +712,7 @@ func TestModifiedLines(t *testing.T) {
 		},
 		{
 			"additions",
-			[]*pull.File{
+			[]*commit.File{
 				{Additions: 55},
 				{Additions: 10},
 				{Additions: 45},
@@ -727,7 +727,7 @@ func TestModifiedLines(t *testing.T) {
 		},
 		{
 			"deletions",
-			[]*pull.File{
+			[]*commit.File{
 				{Additions: 5},
 				{Additions: 10, Deletions: 10},
 				{Additions: 5},
@@ -750,7 +750,7 @@ func TestModifiedLines(t *testing.T) {
 	runFileTests(t, p, []FileTestCase{
 		{
 			"total",
-			[]*pull.File{
+			[]*commit.File{
 				{Additions: 20, Deletions: 20},
 				{Additions: 20},
 				{Deletions: 20},
@@ -773,7 +773,7 @@ func TestModifiedLines(t *testing.T) {
 	runFileTests(t, p, []FileTestCase{
 		{
 			"total",
-			[]*pull.File{
+			[]*commit.File{
 				{Additions: 20, Deletions: 20},
 				{Additions: 20},
 				{Additions: 20, Deletions: 20},
@@ -796,7 +796,7 @@ func TestModifiedLines(t *testing.T) {
 	runFileTests(t, p, []FileTestCase{
 		{
 			"empty",
-			[]*pull.File{},
+			[]*commit.File{},
 			&common.PredicateResult{
 				Satisfied: false,
 				Values:    []string{"+0", "-0"},
@@ -807,7 +807,7 @@ func TestModifiedLines(t *testing.T) {
 		},
 		{
 			"additions",
-			[]*pull.File{
+			[]*commit.File{
 				{Additions: 55},
 				{Additions: 45},
 			},
@@ -821,7 +821,7 @@ func TestModifiedLines(t *testing.T) {
 		},
 		{
 			"deletions",
-			[]*pull.File{
+			[]*commit.File{
 				{Additions: 5, Deletions: 5},
 				{Deletions: 10},
 				{Additions: 5},
@@ -854,7 +854,7 @@ func TestModifiedLinesFiles(t *testing.T) {
 	runFileTests(t, p, []FileTestCase{
 		{
 			"filtered files meet criteria",
-			[]*pull.File{
+			[]*commit.File{
 				{Filename: "app.go", Additions: 30},
 				{Filename: "server.go", Additions: 25},
 				{Filename: "readme.md", Additions: 100}, // Should be ignored
@@ -870,7 +870,7 @@ func TestModifiedLinesFiles(t *testing.T) {
 		},
 		{
 			"filtered files don't meet criteria",
-			[]*pull.File{
+			[]*commit.File{
 				{Filename: "app.go", Additions: 20},
 				{Filename: "server.go", Additions: 15},
 				{Filename: "readme.md", Additions: 100}, // Should be ignored
@@ -886,7 +886,7 @@ func TestModifiedLinesFiles(t *testing.T) {
 		},
 		{
 			"no matching files",
-			[]*pull.File{
+			[]*commit.File{
 				{Filename: "readme.md", Additions: 100},
 				{Filename: "config.xml", Additions: 50},
 			},
@@ -914,7 +914,7 @@ func TestModifiedLinesFiles(t *testing.T) {
 	runFileTests(t, p, []FileTestCase{
 		{
 			"typescript files with total modifications",
-			[]*pull.File{
+			[]*commit.File{
 				{Filename: "src/app.ts", Additions: 30, Deletions: 20},
 				{Filename: "src/utils.ts", Additions: 15, Deletions: 15},
 				{Filename: "docs/readme.md", Additions: 100, Deletions: 50}, // Should be ignored
@@ -944,7 +944,7 @@ func TestModifiedLinesFiles(t *testing.T) {
 	runFileTests(t, p, []FileTestCase{
 		{
 			"exclude patterns filter out unwanted files",
-			[]*pull.File{
+			[]*commit.File{
 				{Filename: "app.go", Additions: 30},
 				{Filename: "server.go", Additions: 25},
 				{Filename: "readme.md", Additions: 100}, // Should be excluded
@@ -978,7 +978,7 @@ func TestModifiedLinesFiles(t *testing.T) {
 	runFileTests(t, p, []FileTestCase{
 		{
 			"include and exclude patterns work together",
-			[]*pull.File{
+			[]*commit.File{
 				{Filename: "src/app.go", Additions: 30, Deletions: 10},
 				{Filename: "src/app.test.go", Additions: 20, Deletions: 5},   // Should be excluded
 				{Filename: "src/utils_test.go", Additions: 15, Deletions: 5}, // Should be excluded
@@ -997,7 +997,7 @@ func TestModifiedLinesFiles(t *testing.T) {
 		},
 		{
 			"conflicting patterns - exclude takes precedence",
-			[]*pull.File{
+			[]*commit.File{
 				{Filename: "src/app.test.go", Additions: 100, Deletions: 50},  // Matches include but also exclude
 				{Filename: "src/utils_test.go", Additions: 75, Deletions: 25}, // Matches include but also exclude
 			},
@@ -1021,7 +1021,7 @@ func TestModifiedLinesFiles(t *testing.T) {
 	runFileTests(t, p, []FileTestCase{
 		{
 			"no file config counts all files",
-			[]*pull.File{
+			[]*commit.File{
 				{Filename: "app.go", Additions: 30},
 				{Filename: "readme.md", Additions: 50},
 				{Filename: "test.txt", Additions: 25},
@@ -1133,11 +1133,11 @@ func TestComparisonExpr(t *testing.T) {
 
 type FileTestCase struct {
 	Name                    string
-	Files                   []*pull.File
+	Files                   []*commit.File
 	ExpectedPredicateResult *common.PredicateResult
 }
 
-func runFileTests(t *testing.T, p Predicate, cases []FileTestCase) {
+func runFileTests(t *testing.T, p CommitPredicate, cases []FileTestCase) {
 	ctx := context.Background()
 
 	for _, tc := range cases {
@@ -1146,7 +1146,7 @@ func runFileTests(t *testing.T, p Predicate, cases []FileTestCase) {
 				ChangedFilesValue: tc.Files,
 			}
 
-			predicateResult, err := p.Evaluate(ctx, prctx)
+			predicateResult, err := p.EvaluateCommit(ctx, prctx)
 			if assert.NoError(t, err, "evaluation failed") {
 				assertPredicateResult(t, tc.ExpectedPredicateResult, predicateResult)
 			}
@@ -1168,7 +1168,7 @@ func TestChangedFilesGlob(t *testing.T) {
 	runFileTests(t, p, []FileTestCase{
 		{
 			"empty",
-			[]*pull.File{},
+			[]*commit.File{},
 			&common.PredicateResult{
 				Satisfied: false,
 				Values:    []string{},
@@ -1180,14 +1180,14 @@ func TestChangedFilesGlob(t *testing.T) {
 		},
 		{
 			"recursiveMatch",
-			[]*pull.File{
+			[]*commit.File{
 				{
 					Filename: "app/utils/helper.go",
-					Status:   pull.FileAdded,
+					Status:   commit.FileAdded,
 				},
 				{
 					Filename: "server/api.go",
-					Status:   pull.FileModified,
+					Status:   commit.FileModified,
 				},
 			},
 			&common.PredicateResult{
@@ -1201,14 +1201,14 @@ func TestChangedFilesGlob(t *testing.T) {
 		},
 		{
 			"wildcardMatch",
-			[]*pull.File{
+			[]*commit.File{
 				{
 					Filename: "server/handler.go",
-					Status:   pull.FileAdded,
+					Status:   commit.FileAdded,
 				},
 				{
 					Filename: "model/user.go",
-					Status:   pull.FileModified,
+					Status:   commit.FileModified,
 				},
 			},
 			&common.PredicateResult{
@@ -1222,14 +1222,14 @@ func TestChangedFilesGlob(t *testing.T) {
 		},
 		{
 			"ignoreGlob",
-			[]*pull.File{
+			[]*commit.File{
 				{
 					Filename: "app/utils/special.go",
-					Status:   pull.FileAdded,
+					Status:   commit.FileAdded,
 				},
 				{
 					Filename: "server/special.go",
-					Status:   pull.FileModified,
+					Status:   commit.FileModified,
 				},
 			},
 			&common.PredicateResult{
@@ -1243,14 +1243,14 @@ func TestChangedFilesGlob(t *testing.T) {
 		},
 		{
 			"noMatch",
-			[]*pull.File{
+			[]*commit.File{
 				{
 					Filename: "model/order.go",
-					Status:   pull.FileDeleted,
+					Status:   commit.FileDeleted,
 				},
 				{
 					Filename: "docs/readme.md",
-					Status:   pull.FileModified,
+					Status:   commit.FileModified,
 				},
 			},
 			&common.PredicateResult{
@@ -1275,14 +1275,14 @@ func TestOnlyChangedFilesGlob(t *testing.T) {
 	runFileTests(t, p, []FileTestCase{
 		{
 			"allMatch",
-			[]*pull.File{
+			[]*commit.File{
 				{
 					Filename: "src/main.go",
-					Status:   pull.FileAdded,
+					Status:   commit.FileAdded,
 				},
 				{
 					Filename: "src/utils/helper.go",
-					Status:   pull.FileModified,
+					Status:   commit.FileModified,
 				},
 			},
 			&common.PredicateResult{
@@ -1293,14 +1293,14 @@ func TestOnlyChangedFilesGlob(t *testing.T) {
 		},
 		{
 			"someMatch",
-			[]*pull.File{
+			[]*commit.File{
 				{
 					Filename: "src/main.go",
-					Status:   pull.FileAdded,
+					Status:   commit.FileAdded,
 				},
 				{
 					Filename: "docs/readme.md",
-					Status:   pull.FileModified,
+					Status:   commit.FileModified,
 				},
 			},
 			&common.PredicateResult{
@@ -1323,10 +1323,10 @@ func TestFileAddedGlob(t *testing.T) {
 	runFileTests(t, p, []FileTestCase{
 		{
 			"matchRecursive",
-			[]*pull.File{
+			[]*commit.File{
 				{
 					Filename: "app/utils/helper.go",
-					Status:   pull.FileAdded,
+					Status:   commit.FileAdded,
 				},
 			},
 			&common.PredicateResult{
@@ -1337,10 +1337,10 @@ func TestFileAddedGlob(t *testing.T) {
 		},
 		{
 			"matchWildcard",
-			[]*pull.File{
+			[]*commit.File{
 				{
 					Filename: "server/api.go",
-					Status:   pull.FileAdded,
+					Status:   commit.FileAdded,
 				},
 			},
 			&common.PredicateResult{
@@ -1351,10 +1351,10 @@ func TestFileAddedGlob(t *testing.T) {
 		},
 		{
 			"noMatch",
-			[]*pull.File{
+			[]*commit.File{
 				{
 					Filename: "model/user.go",
-					Status:   pull.FileAdded,
+					Status:   commit.FileAdded,
 				},
 			},
 			&common.PredicateResult{
@@ -1365,10 +1365,10 @@ func TestFileAddedGlob(t *testing.T) {
 		},
 		{
 			"modifiedNotCounted",
-			[]*pull.File{
+			[]*commit.File{
 				{
 					Filename: "app/client.go",
-					Status:   pull.FileModified,
+					Status:   commit.FileModified,
 				},
 			},
 			&common.PredicateResult{
@@ -1396,7 +1396,7 @@ func TestModifiedLinesGlob(t *testing.T) {
 	runFileTests(t, p, []FileTestCase{
 		{
 			"matchIncluded",
-			[]*pull.File{
+			[]*commit.File{
 				{Filename: "app/main.go", Additions: 15},
 				{Filename: "server/handler.go", Additions: 5},
 			},
@@ -1412,7 +1412,7 @@ func TestModifiedLinesGlob(t *testing.T) {
 		},
 		{
 			"excludeVendor",
-			[]*pull.File{
+			[]*commit.File{
 				{Filename: "vendor/dep.go", Additions: 100},
 				{Filename: "app/main.go", Additions: 5},
 			},
@@ -1428,7 +1428,7 @@ func TestModifiedLinesGlob(t *testing.T) {
 		},
 		{
 			"excludeNonGoFiles",
-			[]*pull.File{
+			[]*commit.File{
 				{Filename: "readme.md", Additions: 100},
 				{Filename: "app/main.go", Additions: 5},
 			},

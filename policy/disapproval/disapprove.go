@@ -115,7 +115,7 @@ func (p *Policy) Trigger() common.Trigger {
 	return t
 }
 
-func (p *Policy) Evaluate(ctx context.Context, prctx pull.Context) (res common.Result) {
+func (p *Policy) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (res common.Result) {
 	log := zerolog.Ctx(ctx)
 
 	res.Name = "disapproval"
@@ -128,7 +128,7 @@ func (p *Policy) Evaluate(ctx context.Context, prctx pull.Context) (res common.R
 	var predicateResults []*common.PredicateResult
 
 	for _, p := range p.Predicates.Predicates() {
-		result, err := p.Evaluate(ctx, prctx)
+		result, err := predicate.EvaluatePullRequest(ctx, p, prctx)
 		if err != nil {
 			res.Error = errors.Wrap(err, "failed to evaluate predicate")
 			return

@@ -17,6 +17,7 @@ package policy
 import (
 	"context"
 
+	"github.com/palantir/policy-bot/commit"
 	"github.com/palantir/policy-bot/policy/approval"
 	"github.com/palantir/policy-bot/policy/common"
 	"github.com/palantir/policy-bot/policy/disapproval"
@@ -57,7 +58,7 @@ type GlobalOptions struct {
 	ApprovalDefaults *approval.Defaults
 }
 
-func ParsePolicy(c *Config, opts *GlobalOptions) (common.Evaluator, error) {
+func ParsePolicy(c *Config, opts *GlobalOptions) (common.PullRequestEvaluator, error) {
 	// Build the options hierarchy in reverse order. When reading an option,
 	// values are tried in the following order:
 	//
@@ -116,17 +117,17 @@ func setDefaultOptions(existing *approval.Options, next *approval.Options) *appr
 }
 
 type evaluator struct {
-	approval    common.Evaluator
-	disapproval common.Evaluator
+	approval    common.PullRequestEvaluator
+	disapproval common.PullRequestEvaluator
 }
 
 func (e evaluator) Trigger() common.Trigger {
 	return e.approval.Trigger() | e.disapproval.Trigger()
 }
 
-func (e evaluator) Evaluate(ctx context.Context, prctx pull.Context) (res common.Result) {
-	disapproval := e.disapproval.Evaluate(ctx, prctx)
-	approval := e.approval.Evaluate(ctx, prctx)
+func (e evaluator) EvaluatePullRequest(ctx context.Context, prctx pull.Context) (res common.Result) {
+	disapproval := e.disapproval.EvaluatePullRequest(ctx, prctx)
+	approval := e.approval.EvaluatePullRequest(ctx, prctx)
 
 	res.Name = "policy"
 	res.Children = []*common.Result{&approval, &disapproval}
@@ -146,5 +147,31 @@ func (e evaluator) Evaluate(ctx context.Context, prctx pull.Context) (res common
 		res.Status = approval.Status
 		res.StatusDescription = approval.StatusDescription
 	}
+	return
+}
+
+// EvaluateCommit evaluates the approval portion of the policy against a
+// commit.Context. The disapproval policy is skipped entirely because it is
+// driven by pull request comments and reviews, which are not available
+// outside of a pull request.
+func (e evaluator) EvaluateCommit(ctx context.Context, cctx commit.Context) (res common.Result) {
+	res.Name = "policy"
+
+	ce, ok := e.approval.(common.CommitEvaluator)
+	if !ok {
+		res.Error = errors.Errorf("approval evaluator %T does not support commit-only evaluation", e.approval)
+		return
+	}
+
+	approval := ce.EvaluateCommit(ctx, cctx)
+	res.Children = []*common.Result{&approval}
+
+	if approval.Error != nil {
+		res.Error = approval.Error
+		return
+	}
+
+	res.Status = approval.Status
+	res.StatusDescription = approval.StatusDescription
 	return
 }

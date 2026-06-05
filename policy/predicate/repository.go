@@ -17,8 +17,8 @@ package predicate
 import (
 	"context"
 
+	"github.com/palantir/policy-bot/commit"
 	"github.com/palantir/policy-bot/policy/common"
-	"github.com/palantir/policy-bot/pull"
 )
 
 type Repository struct {
@@ -26,11 +26,11 @@ type Repository struct {
 	NotMatches []common.Regexp `yaml:"not_matches,omitempty"`
 }
 
-var _ Predicate = Repository{}
+var _ CommitPredicate = Repository{}
 
-func (pred Repository) Evaluate(ctx context.Context, prctx pull.Context) (*common.PredicateResult, error) {
-	owner := prctx.RepositoryOwner()
-	repo := prctx.RepositoryName()
+func (pred Repository) EvaluateCommit(ctx context.Context, cctx commit.Context) (*common.PredicateResult, error) {
+	owner := cctx.RepositoryOwner()
+	repo := cctx.RepositoryName()
 	repoFullName := owner + "/" + repo
 
 	predicateResult := common.PredicateResult{

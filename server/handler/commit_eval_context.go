@@ -1,4 +1,4 @@
-// Copyright 2022 Palantir Technologies, Inc.
+// Copyright 2026 Palantir Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,27 +20,26 @@ import (
 	"strings"
 
 	"github.com/google/go-github/v85/github"
+	"github.com/palantir/policy-bot/commit"
 	"github.com/palantir/policy-bot/policy"
 	"github.com/palantir/policy-bot/policy/common"
-	"github.com/palantir/policy-bot/pull"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/shurcooL/githubv4"
 )
 
-// EvalContext contains common fields and methods used to evaluate policy
-// requests. Handlers construct an EvalContext once they decide to handle a
-// request or event, then call the appropriate methods for each stage of
-// evaluation. Handlers with no special requirements can simply call Evaluate.
-type EvalContext struct {
+// CommitEvalContext is the commit-scoped twin of EvalContext. It is used by
+// handlers that evaluate policy against a commit.Context (for example, merge
+// group webhooks) rather than a pull.Context.
+type CommitEvalContext struct {
 	Client   *github.Client
 	V4Client *githubv4.Client
 
 	Options   *PullEvaluationOptions
 	PublicURL string
 
-	PullContext pull.Context
-	Config      FetchedConfig
+	CommitContext commit.Context
+	Config        FetchedConfig
 
 	// If true, store statuses in the Status field instead of posting them to
 	// GitHub. Only the last status is saved, so when this option is enabled,
@@ -49,8 +48,8 @@ type EvalContext struct {
 	Status         *github.RepoStatus
 }
 
-// Evaluate runs the full process for evaluating a pull request.
-func (ec *EvalContext) Evaluate(ctx context.Context, trigger common.Trigger) error {
+// Evaluate runs the full process for evaluating a commit-scoped event.
+func (ec *CommitEvalContext) Evaluate(ctx context.Context, trigger common.Trigger) error {
 	evaluator, err := ec.ParseConfig(ctx, trigger)
 	if err != nil {
 		return err
@@ -59,19 +58,14 @@ func (ec *EvalContext) Evaluate(ctx context.Context, trigger common.Trigger) err
 		return nil
 	}
 
-	result, err := ec.EvaluatePolicy(ctx, evaluator)
-	if err != nil {
-		return err
-	}
-
-	ec.RunPostEvaluateActions(ctx, result, trigger)
-	return nil
+	_, err = ec.EvaluatePolicy(ctx, evaluator)
+	return err
 }
 
-// ParseConfig checks and validates the configuration in the EvalContext and
-// returns a non-nil PullRequestEvaluator if the policy exists, is valid, and
+// ParseConfig checks and validates the configuration in the CommitEvalContext
+// and returns a non-nil CommitEvaluator if the policy exists, is valid, and
 // requires evaluation for the trigger.
-func (ec *EvalContext) ParseConfig(ctx context.Context, trigger common.Trigger) (common.PullRequestEvaluator, error) {
+func (ec *CommitEvalContext) ParseConfig(ctx context.Context, trigger common.Trigger) (common.CommitEvaluator, error) {
 	logger := zerolog.Ctx(ctx)
 
 	fc := ec.Config
@@ -80,8 +74,6 @@ func (ec *EvalContext) ParseConfig(ctx context.Context, trigger common.Trigger) 
 		msg := fmt.Sprintf("Error loading policy from %s", fc.Source)
 		logger.Warn().Err(fc.LoadError).Bool("seen_policy", fc.SeenPolicy).Msg(msg)
 
-		// If policy-bot has never seen a policy file for this base branch
-		// then suppress the failing status.
 		if fc.SeenPolicy {
 			ec.PostStatus(ctx, "error", msg)
 		}
@@ -113,7 +105,14 @@ func (ec *EvalContext) ParseConfig(ctx context.Context, trigger common.Trigger) 
 		return nil, errors.Wrapf(err, "failed to create evaluator: %s: %s", fc.Source, fc.Path)
 	}
 
-	policyTrigger := evaluator.Trigger()
+	commitEvaluator, ok := evaluator.(common.CommitEvaluator)
+	if !ok {
+		msg := fmt.Sprintf("Policy in %s: %s does not support commit-only evaluation", fc.Source, fc.Path)
+		ec.PostStatus(ctx, "error", msg)
+		return nil, errors.New(msg)
+	}
+
+	policyTrigger := commitEvaluator.Trigger()
 	if !trigger.Matches(policyTrigger) {
 		logger.Debug().
 			Str("event_trigger", trigger.String()).
@@ -122,16 +121,16 @@ func (ec *EvalContext) ParseConfig(ctx context.Context, trigger common.Trigger) 
 		return nil, nil
 	}
 
-	return evaluator, nil
+	return commitEvaluator, nil
 }
 
-// EvaluatePolicy evaluates the policy for a PR and generates a result. The
-// evaluator must be non-nil, meaning callers should check the output of
+// EvaluatePolicy evaluates the policy for a commit and generates a result.
+// The evaluator must be non-nil, meaning callers should check the output of
 // ParseConfig before calling this method.
-func (ec *EvalContext) EvaluatePolicy(ctx context.Context, evaluator common.PullRequestEvaluator) (common.Result, error) {
+func (ec *CommitEvalContext) EvaluatePolicy(ctx context.Context, evaluator common.CommitEvaluator) (common.Result, error) {
 	logger := zerolog.Ctx(ctx)
 
-	result := evaluator.EvaluatePullRequest(ctx, ec.PullContext)
+	result := evaluator.EvaluateCommit(ctx, ec.CommitContext)
 	if result.Error != nil {
 		msg := fmt.Sprintf("Error evaluating policy in %s: %s", ec.Config.Source, ec.Config.Path)
 		logger.Warn().Err(result.Error).Msg(msg)
@@ -162,35 +161,18 @@ func (ec *EvalContext) EvaluatePolicy(ctx context.Context, evaluator common.Pull
 	return result, nil
 }
 
-// RunPostEvaluateActions executes additional actions that should happen after
-// evaluation completes, like assigning reviewers or dismissing reviews. These
-// actions happen after a status is posted to GitHub for the main evaluation.
-//
-// Post-evaluate actions are best effort, so this function logs failures
-// instead of returning an error.
-func (ec *EvalContext) RunPostEvaluateActions(ctx context.Context, result common.Result, trigger common.Trigger) {
+// PostStatus posts a status for the evaluated commit. Unlike the pull request
+// version, there is no IsOpen check (merge groups have no equivalent state).
+func (ec *CommitEvalContext) PostStatus(ctx context.Context, state, message string) {
 	logger := zerolog.Ctx(ctx)
 
-	if err := ec.requestReviewsForResult(ctx, trigger, result); err != nil {
-		logger.Error().Err(err).Msg("Failed to request reviewers")
-	}
-
-	if err := ec.dismissStaleReviewsForResult(ctx, result); err != nil {
-		logger.Error().Err(err).Msg("Failed to dismiss stale reviews")
-	}
-}
-
-// PostStatus posts a status for the evaluated PR.
-func (ec *EvalContext) PostStatus(ctx context.Context, state, message string) {
-	logger := zerolog.Ctx(ctx)
-
-	owner := ec.PullContext.RepositoryOwner()
-	repo := ec.PullContext.RepositoryName()
-	sha := ec.PullContext.HeadSHA()
-	base, _ := ec.PullContext.Branches()
+	owner := ec.CommitContext.RepositoryOwner()
+	repo := ec.CommitContext.RepositoryName()
+	sha := ec.CommitContext.HeadSHA()
+	base, _ := ec.CommitContext.Branches()
 
 	publicURL := strings.TrimSuffix(ec.PublicURL, "/")
-	detailsURL := fmt.Sprintf("%s/details/%s/%s/%d", publicURL, owner, repo, ec.PullContext.Number())
+	detailsURL := fmt.Sprintf("%s/details/%s/%s/commit/%s", publicURL, owner, repo, sha)
 
 	status := github.RepoStatus{
 		State:       &state,
@@ -201,11 +183,6 @@ func (ec *EvalContext) PostStatus(ctx context.Context, state, message string) {
 
 	if ec.SkipPostStatus {
 		ec.Status = &status
-		return
-	}
-
-	if !ec.PullContext.IsOpen() {
-		logger.Info().Msg("Skipping status update because PR state is not open")
 		return
 	}
 

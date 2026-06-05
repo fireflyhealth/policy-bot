@@ -18,6 +18,7 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/palantir/policy-bot/commit"
 	"github.com/palantir/policy-bot/policy/common"
 	"github.com/palantir/policy-bot/pull"
 	"github.com/palantir/policy-bot/pull/pulltest"
@@ -32,7 +33,7 @@ func TestComments(t *testing.T) {
 		ExpectedCommentAuthors []string
 		TeamMembership         map[string][]string
 		OrgMembership          map[string][]string
-		Collaborators          []*pull.Collaborator
+		Collaborators          []*commit.Collaborator
 		ExpectedError          bool
 	}{
 		"ignore comments by user": {
@@ -84,12 +85,12 @@ func TestComments(t *testing.T) {
 			},
 			Options: Options{
 				IgnoreComments: &common.Actors{
-					Permissions: []pull.Permission{pull.PermissionRead},
+					Permissions: []commit.Permission{commit.PermissionRead},
 				},
 			},
-			Collaborators: []*pull.Collaborator{
-				{Name: "iignore", Permissions: []pull.CollaboratorPermission{
-					{Permission: pull.PermissionRead},
+			Collaborators: []*commit.Collaborator{
+				{Name: "iignore", Permissions: []commit.CollaboratorPermission{
+					{Permission: commit.PermissionRead},
 				}},
 			},
 			ExpectedCommentAuthors: []string{"rrandom"},
@@ -172,7 +173,7 @@ func TestReviews(t *testing.T) {
 		ExpectedError         bool
 		TeamMembership        map[string][]string
 		OrgMembership         map[string][]string
-		Collaborators         []*pull.Collaborator
+		Collaborators         []*commit.Collaborator
 	}{
 		"ignore reviews by iignore": {
 			Reviews: []*pull.Review{
@@ -223,12 +224,12 @@ func TestReviews(t *testing.T) {
 			},
 			Options: Options{
 				IgnoreReviews: &common.Actors{
-					Permissions: []pull.Permission{pull.PermissionRead},
+					Permissions: []commit.Permission{commit.PermissionRead},
 				},
 			},
-			Collaborators: []*pull.Collaborator{
-				{Name: "iignore", Permissions: []pull.CollaboratorPermission{
-					{Permission: pull.PermissionRead},
+			Collaborators: []*commit.Collaborator{
+				{Name: "iignore", Permissions: []commit.CollaboratorPermission{
+					{Permission: commit.PermissionRead},
 				}},
 			},
 			ExpectedReviewAuthors: []string{"rrandom"},
